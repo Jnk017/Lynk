@@ -18,17 +18,11 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          # On cible le package-lock.json du dossier frontend pour le cache
-          cache-dependency-path: lynk/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: 📦 Install dependencies
-        working-directory: ./lynk/frontend
+        working-directory: ./frontend
         run: npm ci
-
-      # Optionnel : Si tu as des tests unitaires (Jest), décommente les lignes suivantes
-      # - name: 🧪 Run Tests
-      #   working-directory: ./lynk/frontend
-      #   run: npm test
 
       - name: 🚀 Setup Expo EAS
         uses: expo/expo-github-action@v8
@@ -37,5 +31,5 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: 📱 Build Test App on Expo EAS
-        working-directory: ./lynk/frontend
+        working-directory: ./frontend
         run: eas build --profile test-build --platform all --non-interactive
