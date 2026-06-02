@@ -93,6 +93,14 @@ export class PaymentService {
       processed: false,
     });
 
+    const log = await this.webhookLogRepository.save({
+      provider: TransactionProvider.STRIPE,
+      eventType: event.type,
+      externalRef: event.data?.object?.id,
+      payload: event as unknown as Record<string, unknown>,
+      processed: false,
+    });
+
     if (event.type === 'payment_intent.succeeded') {
       const intent = event.data.object as { id: string };
       await this.transactionRepository.update(
@@ -160,6 +168,11 @@ export class PaymentService {
       throw new BadRequestException(
         'Pi payment could not be verified server-side',
       );
+    }
+
+    const verification = await this.piPaymentProvider.verifyPayment({ externalRef: piPaymentId });
+    if (!verification.verified || !verification.amount || verification.amount <= 0) {
+      throw new BadRequestException('Pi payment could not be verified server-side');
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
