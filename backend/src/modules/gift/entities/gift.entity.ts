@@ -39,6 +39,15 @@ export class GiftCatalogItem {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }
 
 @Entity('gifts_sent')
@@ -50,24 +59,28 @@ export class GiftSent {
   senderId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'sender_id' })
+  @JoinColumn({ name: 'senderId' })
   sender: User;
 
   @Column()
   receiverId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'receiver_id' })
+  @JoinColumn({ name: 'receiverId' })
   receiver: User;
 
   @Column()
   giftCatalogId: string;
 
   @ManyToOne(() => GiftCatalogItem)
-  @JoinColumn({ name: 'gift_catalog_id' })
+  @JoinColumn({ name: 'giftCatalogId' })
   gift: GiftCatalogItem;
 
-  @Column({ type: 'enum', enum: TransactionCurrency })
+  @Column({
+    type: 'enum',
+    enum: TransactionCurrency,
+    enumName: 'transaction_currency_enum',
+  })
   paidCurrency: TransactionCurrency;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })

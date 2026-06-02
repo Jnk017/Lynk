@@ -25,14 +25,14 @@ export class MarriageStake {
   user1Id: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_1_id' })
+  @JoinColumn({ name: 'user1Id' })
   user1: User;
 
   @Column()
   user2Id: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_2_id' })
+  @JoinColumn({ name: 'user2Id' })
   user2: User;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
@@ -41,6 +41,7 @@ export class MarriageStake {
   @Column({
     type: 'enum',
     enum: MarriageStakeStatus,
+    enumName: 'marriage_stake_status_enum',
     default: MarriageStakeStatus.PENDING,
   })
   status: MarriageStakeStatus;

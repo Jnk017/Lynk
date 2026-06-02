@@ -23,7 +23,7 @@ export class SwipeActionEntity {
   swiperId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'swiper_id' })
+  @JoinColumn({ name: 'swiperId' })
   swiper: User;
 
   @Column()
@@ -31,10 +31,10 @@ export class SwipeActionEntity {
   swipedId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'swiped_id' })
+  @JoinColumn({ name: 'swipedId' })
   swiped: User;
 
-  @Column({ type: 'enum', enum: SwipeAction })
+  @Column({ type: 'enum', enum: SwipeAction, enumName: 'swipe_action_enum' })
   action: SwipeAction;
 
   @CreateDateColumn()

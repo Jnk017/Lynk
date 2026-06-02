@@ -20,7 +20,7 @@ export class ChatParticipant {
   userId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Column()
@@ -29,7 +29,7 @@ export class ChatParticipant {
   @ManyToOne(() => ChatRoom, (room) => room.participants, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'chat_room_id' })
+  @JoinColumn({ name: 'chatRoomId' })
   chatRoom: ChatRoom;
 
   @Column({ nullable: true })

@@ -7,12 +7,14 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { RevenueDistributionStatus } from '../../../common/enums';
 import { User } from '../../user/entities/user.entity';
 import { RevenuePool } from './revenue-pool.entity';
 
 @Entity('revenue_distributions')
+@Index(['month'])
 export class RevenueDistribution {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -23,14 +25,17 @@ export class RevenueDistribution {
   @ManyToOne(() => RevenuePool, (pool) => pool.distributions, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'pool_id' })
+  @JoinColumn({ name: 'poolId' })
   pool: RevenuePool;
 
   @Column()
   founderId: string;
 
+  @Column()
+  month: string;
+
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'founder_id' })
+  @JoinColumn({ name: 'founderId' })
   founder: User;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
@@ -39,6 +44,7 @@ export class RevenueDistribution {
   @Column({
     type: 'enum',
     enum: RevenueDistributionStatus,
+    enumName: 'revenue_distribution_status_enum',
     default: RevenueDistributionStatus.PENDING,
   })
   status: RevenueDistributionStatus;

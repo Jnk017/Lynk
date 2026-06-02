@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import {
   TransactionType,
@@ -17,6 +18,8 @@ import {
 import { User } from '../../user/entities/user.entity';
 
 @Entity('transactions')
+@Index(['provider'])
+@Index(['externalRef'])
 export class Transaction {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -25,24 +28,37 @@ export class Transaction {
   userId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ type: 'enum', enum: TransactionType })
+  @Column({
+    type: 'enum',
+    enum: TransactionType,
+    enumName: 'transaction_type_enum',
+  })
   type: TransactionType;
 
-  @Column({ type: 'enum', enum: TransactionCurrency })
+  @Column({
+    type: 'enum',
+    enum: TransactionCurrency,
+    enumName: 'transaction_currency_enum',
+  })
   currency: TransactionCurrency;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
   amount: number;
 
-  @Column({ type: 'enum', enum: TransactionProvider })
+  @Column({
+    type: 'enum',
+    enum: TransactionProvider,
+    enumName: 'transaction_provider_enum',
+  })
   provider: TransactionProvider;
 
   @Column({
     type: 'enum',
     enum: TransactionStatus,
+    enumName: 'transaction_status_enum',
     default: TransactionStatus.PENDING,
   })
   status: TransactionStatus;

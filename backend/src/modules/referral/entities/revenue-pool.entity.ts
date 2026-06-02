@@ -38,6 +38,7 @@ export class RevenuePool {
   @Column({
     type: 'enum',
     enum: RevenuePoolStatus,
+    enumName: 'revenue_pool_status_enum',
     default: RevenuePoolStatus.CALCULATING,
   })
   status: RevenuePoolStatus;

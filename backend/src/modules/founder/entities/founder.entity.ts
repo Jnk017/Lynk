@@ -7,10 +7,13 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 
 @Entity('founders')
+@Index(['userId'], { unique: true })
+@Index(['founderNumber'], { unique: true })
 export class Founder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -19,7 +22,7 @@ export class Founder {
   userId: string;
 
   @OneToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Column({ unique: true })

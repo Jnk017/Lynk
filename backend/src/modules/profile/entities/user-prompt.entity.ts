@@ -19,7 +19,7 @@ export class UserPrompt {
   userId: string;
 
   @ManyToOne(() => User, (user) => user.prompts, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Column()

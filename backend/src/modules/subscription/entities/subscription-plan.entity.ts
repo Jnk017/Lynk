@@ -13,7 +13,12 @@ export class SubscriptionPlan {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: SubscriptionTier, unique: true })
+  @Column({
+    type: 'enum',
+    enum: SubscriptionTier,
+    enumName: 'subscription_tier_enum',
+    unique: true,
+  })
   name: SubscriptionTier;
 
   @Column()

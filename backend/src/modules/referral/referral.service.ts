@@ -224,6 +224,7 @@ export class ReferralService {
         distributions.push({
           poolId: pool.id,
           founderId: founder.id,
+          month: period,
           amount: dividendPerFounder,
           status: RevenueDistributionStatus.PAID,
           paidAt: new Date(),

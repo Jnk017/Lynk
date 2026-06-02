@@ -21,17 +21,22 @@ export class Message {
   chatRoomId: string;
 
   @ManyToOne(() => ChatRoom, (room) => room.messages, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'chat_room_id' })
+  @JoinColumn({ name: 'chatRoomId' })
   chatRoom: ChatRoom;
 
   @Column()
   senderId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'sender_id' })
+  @JoinColumn({ name: 'senderId' })
   sender: User;
 
-  @Column({ type: 'enum', enum: MessageType, default: MessageType.TEXT })
+  @Column({
+    type: 'enum',
+    enum: MessageType,
+    enumName: 'message_type_enum',
+    default: MessageType.TEXT,
+  })
   type: MessageType;
 
   @Column({ nullable: true, length: 2000 })

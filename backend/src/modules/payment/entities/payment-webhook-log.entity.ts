@@ -3,17 +3,26 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { TransactionProvider } from '../../../common/enums';
 
 @Entity('payment_webhook_logs')
+@Index(['provider', 'externalEventId'], {
+  unique: true,
+  where: '"externalEventId" IS NOT NULL',
+})
 export class PaymentWebhookLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: TransactionProvider })
+  @Column({
+    type: 'enum',
+    enum: TransactionProvider,
+    enumName: 'transaction_provider_enum',
+  })
   provider: TransactionProvider;
 
   @Column({ nullable: true })
@@ -21,6 +30,9 @@ export class PaymentWebhookLog {
 
   @Column({ nullable: true })
   externalRef: string;
+
+  @Column({ nullable: true })
+  externalEventId: string;
 
   @Column({ default: false })
   processed: boolean;

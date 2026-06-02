@@ -25,14 +25,14 @@ export class StakingContract {
   creatorId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'creator_id' })
+  @JoinColumn({ name: 'creatorId' })
   creator: User;
 
   @Column()
   partnerId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'partner_id' })
+  @JoinColumn({ name: 'partnerId' })
   partner: User;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
@@ -41,6 +41,7 @@ export class StakingContract {
   @Column({
     type: 'enum',
     enum: StakingContractStatus,
+    enumName: 'staking_contract_status_enum',
     default: StakingContractStatus.ACTIVE,
   })
   status: StakingContractStatus;
