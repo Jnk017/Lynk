@@ -41,15 +41,24 @@ export class FounderService {
       `SELECT pg_advisory_xact_lock(hashtext('lynk_founder_allocation'))`,
     );
 
-    const existing = await manager.findOne(Founder, { where: { userId } });
+    const existing = await manager.findOne(Founder, {
+      where: { userId },
+      withDeleted: true,
+    });
     if (existing) return existing;
 
-    const founderCount = await manager.count(Founder);
-    if (founderCount >= MAX_FOUNDERS) {
+    const maxFounder = await manager
+      .createQueryBuilder(Founder, 'founder')
+      .withDeleted()
+      .select('COALESCE(MAX(founder."founderNumber"), 0)', 'max')
+      .getRawOne<{ max: string | number | null }>();
+
+    const currentMaxFounderNumber = Number(maxFounder?.max || 0);
+    if (currentMaxFounderNumber >= MAX_FOUNDERS) {
       throw new BadRequestException('Founder limit reached');
     }
 
-    const founderNumber = founderCount + 1;
+    const founderNumber = currentMaxFounderNumber + 1;
     const founder = await manager.save(Founder, {
       userId,
       founderNumber,
