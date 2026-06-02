@@ -29,6 +29,7 @@ import { Founder } from './modules/founder/entities/founder.entity';
 import { SystemSetting } from './modules/system-settings/entities/system-setting.entity';
 import { FeatureFlag } from './modules/feature-flag/entities/feature-flag.entity';
 import { AuditLog } from './modules/audit-log/entities/audit-log.entity';
+import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -91,6 +92,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
           SystemSetting,
           FeatureFlag,
           AuditLog,
+          RefreshToken,
         ],
         synchronize:
           configService.get<boolean>('database.synchronize') === true,
