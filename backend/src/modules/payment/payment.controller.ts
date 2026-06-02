@@ -11,9 +11,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsString, IsEnum, Min } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
 import { PaymentService } from './payment.service';
 import { TransactionType } from '../../common/enums';
 
@@ -28,15 +27,10 @@ class CreatePaymentIntentDto {
   type: TransactionType;
 }
 
-class CreditPiDto {
-  @ApiProperty()
-  @IsNumber()
-  @Min(0.001)
-  piAmount: number;
-
-  @ApiProperty()
+class VerifyPiPaymentDto {
+  @ApiProperty({ description: 'Pi Network payment identifier returned by Pi SDK' })
   @IsString()
-  piTxId: string;
+  piPaymentId: string;
 }
 
 @ApiTags('payment')
@@ -47,7 +41,7 @@ export class PaymentController {
   @Post('stripe/intent')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create Stripe payment intent' })
+  @ApiOperation({ summary: 'Create optional Stripe payment intent' })
   createIntent(@Request() req: { user: { id: string } }, @Body() dto: CreatePaymentIntentDto) {
     return this.paymentService.createStripePaymentIntent(req.user.id, dto.amountCents, 'usd', dto.type);
   }
@@ -61,12 +55,12 @@ export class PaymentController {
     return this.paymentService.handleStripeWebhook(req.rawBody as Buffer, sig);
   }
 
-  @Post('pi/credit')
+  @Post('pi/verify')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Credit Pi balance after Pi Network payment' })
-  creditPi(@Request() req: { user: { id: string } }, @Body() dto: CreditPiDto) {
-    return this.paymentService.creditPiPayment(req.user.id, dto.piAmount, dto.piTxId);
+  @ApiOperation({ summary: 'Verify Pi payment server-side and credit balance' })
+  verifyPiPayment(@Request() req: { user: { id: string } }, @Body() dto: VerifyPiPaymentDto) {
+    return this.paymentService.verifyAndCreditPiPayment(req.user.id, dto.piPaymentId);
   }
 
   @Get('transactions')

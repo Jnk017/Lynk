@@ -23,7 +23,13 @@ interface AuthenticatedSocket extends Socket {
 }
 
 @WebSocketGateway({
-  cors: { origin: '*', credentials: true },
+  cors: {
+    origin:
+      process.env.ALLOWED_ORIGINS?.split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean) || true,
+    credentials: true,
+  },
   namespace: '/chat',
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -42,14 +48,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
-      const token = client.handshake.auth?.token || client.handshake.headers?.authorization?.replace('Bearer ', '');
+      const token =
+        client.handshake.auth?.token ||
+        client.handshake.headers?.authorization?.replace('Bearer ', '');
       if (!token) throw new WsException('No auth token provided');
 
       const payload = this.jwtService.verify(token, {
         secret: this.configService.get<string>('jwt.accessSecret'),
       });
 
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user) throw new WsException('User not found');
 
       client.userId = user.id;
@@ -76,14 +86,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         isOnline: false,
         lastSeen: new Date(),
       });
-      this.server.emit('user:offline', { userId: client.userId, lastSeen: new Date() });
+      this.server.emit('user:offline', {
+        userId: client.userId,
+        lastSeen: new Date(),
+      });
     }
   }
 
   @SubscribeMessage('message:send')
   async handleMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: { chatRoomId: string; content: string; type?: MessageType },
+    @MessageBody()
+    data: { chatRoomId: string; content: string; type?: MessageType },
   ) {
     if (!client.userId) throw new WsException('Not authenticated');
 
@@ -116,7 +130,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { chatRoomId: string },
   ) {
-    client.to(`room:${data.chatRoomId}`).emit('typing:start', { userId: client.userId });
+    client
+      .to(`room:${data.chatRoomId}`)
+      .emit('typing:start', { userId: client.userId });
   }
 
   @SubscribeMessage('typing:stop')
@@ -124,7 +140,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { chatRoomId: string },
   ) {
-    client.to(`room:${data.chatRoomId}`).emit('typing:stop', { userId: client.userId });
+    client
+      .to(`room:${data.chatRoomId}`)
+      .emit('typing:stop', { userId: client.userId });
   }
 
   /** Emit a message to a specific user if they're connected */
