@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { MAX_FOUNDERS } from '../../common/constants';
 import { User } from '../user/entities/user.entity';
 import { Founder } from './entities/founder.entity';
@@ -19,35 +19,10 @@ export class FounderService {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(
-        `SELECT pg_advisory_xact_lock(hashtext('lynk_founder_allocation'))`,
-      );
-
-      const existing = await queryRunner.manager.findOne(Founder, {
-        where: { userId },
-      });
-      if (existing) {
-        await queryRunner.commitTransaction();
-        return existing;
-      }
-
-      const founderCount = await queryRunner.manager.count(Founder);
-      if (founderCount >= MAX_FOUNDERS) {
-        throw new BadRequestException('Founder limit reached');
-      }
-
-      const founderNumber = founderCount + 1;
-      const founder = await queryRunner.manager.save(Founder, {
+      const founder = await this.allocateFounderSlotWithManager(
+        queryRunner.manager,
         userId,
-        founderNumber,
-        lifetimePremium: true,
-      });
-
-      await queryRunner.manager.update(User, userId, {
-        isFounder: true,
-        founderRank: founderNumber,
-      });
-
+      );
       await queryRunner.commitTransaction();
       return founder;
     } catch (error) {
@@ -56,5 +31,36 @@ export class FounderService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async allocateFounderSlotWithManager(
+    manager: EntityManager,
+    userId: string,
+  ): Promise<Founder> {
+    await manager.query(
+      `SELECT pg_advisory_xact_lock(hashtext('lynk_founder_allocation'))`,
+    );
+
+    const existing = await manager.findOne(Founder, { where: { userId } });
+    if (existing) return existing;
+
+    const founderCount = await manager.count(Founder);
+    if (founderCount >= MAX_FOUNDERS) {
+      throw new BadRequestException('Founder limit reached');
+    }
+
+    const founderNumber = founderCount + 1;
+    const founder = await manager.save(Founder, {
+      userId,
+      founderNumber,
+      lifetimePremium: true,
+    });
+
+    await manager.update(User, userId, {
+      isFounder: true,
+      founderRank: founderNumber,
+    });
+
+    return founder;
   }
 }

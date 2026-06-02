@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { RedisModule } from '@nestjs-modules/ioredis';
+import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
 import configuration from './config/configuration';
 
 // Entities
@@ -92,8 +92,9 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
           FeatureFlag,
           AuditLog,
         ],
-        synchronize: configService.get<string>('nodeEnv') === 'development',
-        logging: configService.get<string>('nodeEnv') === 'development',
+        synchronize:
+          configService.get<boolean>('database.synchronize') === true,
+        logging: configService.get<boolean>('database.logging') === true,
       }),
       inject: [ConfigService],
     }),
@@ -104,13 +105,14 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
 
     RedisModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
+      useFactory: (configService: ConfigService): RedisModuleOptions => {
         const host = configService.get<string>('redis.host') || 'localhost';
         const port = configService.get<number>('redis.port') || 6379;
         const password = configService.get<string>('redis.password');
         return {
-          config: password ? { host, port, password } : { host, port },
-        } as any;
+          type: 'single',
+          options: password ? { host, port, password } : { host, port },
+        };
       },
       inject: [ConfigService],
     }),

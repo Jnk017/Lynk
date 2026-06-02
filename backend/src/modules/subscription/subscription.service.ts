@@ -8,11 +8,7 @@ import { Repository, DataSource } from 'typeorm';
 import { SubscriptionPlan } from './entities/subscription-plan.entity';
 import { User } from '../user/entities/user.entity';
 import { Transaction } from '../payment/entities/transaction.entity';
-import {
-  SubscriptionTier,
-  TransactionType,
-  TransactionStatus,
-} from '../../common/enums';
+import { SubscriptionTier, TransactionType } from '../../common/enums';
 import { SUBSCRIPTION_PRICES } from '../../common/constants';
 import { PaymentService } from '../payment/payment.service';
 

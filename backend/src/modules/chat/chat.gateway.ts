@@ -9,7 +9,6 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { UseGuards } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,6 +19,10 @@ import { MessageType } from '../../common/enums';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
+}
+
+interface JwtSocketPayload {
+  sub: string;
 }
 
 @WebSocketGateway({
@@ -48,12 +51,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
+      const handshakeAuth = client.handshake.auth as
+        | Record<string, unknown>
+        | undefined;
+      const authToken = handshakeAuth?.token;
+      const headerToken = client.handshake.headers?.authorization?.replace(
+        'Bearer ',
+        '',
+      );
       const token =
-        client.handshake.auth?.token ||
-        client.handshake.headers?.authorization?.replace('Bearer ', '');
+        typeof authToken === 'string' ? authToken : headerToken || undefined;
       if (!token) throw new WsException('No auth token provided');
 
-      const payload = this.jwtService.verify(token, {
+      const payload = this.jwtService.verify<JwtSocketPayload>(token, {
         secret: this.configService.get<string>('jwt.accessSecret'),
       });
 
@@ -70,7 +80,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Auto-join all user's chat rooms
       const rooms = await this.chatService.getUserRooms(user.id);
       for (const room of rooms) {
-        client.join(`room:${room.id}`);
+        await client.join(`room:${room.id}`);
       }
 
       this.server.emit('user:online', { userId: user.id });

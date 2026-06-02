@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { MarriageStakeStatus } from '../../../common/enums';
@@ -37,7 +38,11 @@ export class MarriageStake {
   @Column({ type: 'decimal', precision: 18, scale: 8 })
   amountPi: number;
 
-  @Column({ type: 'enum', enum: MarriageStakeStatus, default: MarriageStakeStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: MarriageStakeStatus,
+    default: MarriageStakeStatus.PENDING,
+  })
   status: MarriageStakeStatus;
 
   @Column({ nullable: true })
@@ -65,4 +70,7 @@ export class MarriageStake {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

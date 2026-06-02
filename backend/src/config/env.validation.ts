@@ -29,6 +29,10 @@ export function validateProductionEnv(): void {
   requireStrongSecret('JWT_REFRESH_SECRET');
   requireStrongSecret('DB_PASSWORD');
   requireEnv('ALLOWED_ORIGINS');
+
+  if (process.env.DB_SYNCHRONIZE === 'true') {
+    throw new Error('DB_SYNCHRONIZE must never be true in production');
+  }
 }
 
 export function parseAllowedOrigins(): string[] | true {

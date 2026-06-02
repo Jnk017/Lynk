@@ -11,8 +11,13 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsEnum, Min } from 'class-validator';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProperty,
+} from '@nestjs/swagger';
+import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { PaymentService } from './payment.service';
 import { TransactionType } from '../../common/enums';
 
@@ -28,9 +33,16 @@ class CreatePaymentIntentDto {
 }
 
 class VerifyPiPaymentDto {
-  @ApiProperty({ description: 'Pi Network payment identifier returned by Pi SDK' })
+  @ApiProperty({
+    description: 'Pi Network payment identifier returned by Pi SDK',
+  })
   @IsString()
   piPaymentId: string;
+
+  @ApiProperty({ enum: TransactionType, required: false })
+  @IsOptional()
+  @IsEnum(TransactionType)
+  type?: TransactionType;
 }
 
 @ApiTags('payment')
@@ -42,8 +54,16 @@ export class PaymentController {
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create optional Stripe payment intent' })
-  createIntent(@Request() req: { user: { id: string } }, @Body() dto: CreatePaymentIntentDto) {
-    return this.paymentService.createStripePaymentIntent(req.user.id, dto.amountCents, 'usd', dto.type);
+  createIntent(
+    @Request() req: { user: { id: string } },
+    @Body() dto: CreatePaymentIntentDto,
+  ) {
+    return this.paymentService.createStripePaymentIntent(
+      req.user.id,
+      dto.amountCents,
+      'usd',
+      dto.type,
+    );
   }
 
   @Post('stripe/webhook')
@@ -52,15 +72,22 @@ export class PaymentController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') sig: string,
   ) {
-    return this.paymentService.handleStripeWebhook(req.rawBody as Buffer, sig);
+    return this.paymentService.handleStripeWebhook(req.rawBody, sig);
   }
 
   @Post('pi/verify')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Verify Pi payment server-side and credit balance' })
-  verifyPiPayment(@Request() req: { user: { id: string } }, @Body() dto: VerifyPiPaymentDto) {
-    return this.paymentService.verifyAndCreditPiPayment(req.user.id, dto.piPaymentId);
+  verifyPiPayment(
+    @Request() req: { user: { id: string } },
+    @Body() dto: VerifyPiPaymentDto,
+  ) {
+    return this.paymentService.verifyAndCreditPiPayment(
+      req.user.id,
+      dto.piPaymentId,
+      dto.type || TransactionType.SUBSCRIPTION,
+    );
   }
 
   @Get('transactions')
@@ -72,6 +99,10 @@ export class PaymentController {
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.paymentService.getUserTransactions(req.user.id, Number(page), Number(limit));
+    return this.paymentService.getUserTransactions(
+      req.user.id,
+      Number(page),
+      Number(limit),
+    );
   }
 }

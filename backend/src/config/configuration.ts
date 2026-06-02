@@ -11,10 +11,8 @@ export default () => ({
   ...databaseConfig(),
   ...redisConfig(),
   jwt: {
-    accessSecret:
-      process.env.JWT_ACCESS_SECRET || 'lynk_access_secret_change_me',
-    refreshSecret:
-      process.env.JWT_REFRESH_SECRET || 'lynk_refresh_secret_change_me',
+    accessSecret: process.env.JWT_ACCESS_SECRET || '',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || '',
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '24h',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
   },

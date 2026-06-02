@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { User } from '../user/entities/user.entity';
 import { ReferralLog } from './entities/referral-log.entity';
 import { RevenuePool } from './entities/revenue-pool.entity';
@@ -36,8 +36,6 @@ export class ReferralService {
     private revenuePoolRepository: Repository<RevenuePool>,
     @InjectRepository(RevenueDistribution)
     private distributionRepository: Repository<RevenueDistribution>,
-    @InjectRepository(Transaction)
-    private transactionRepository: Repository<Transaction>,
     private dataSource: DataSource,
     private systemSettingsService: SystemSettingsService,
     private auditLogService: AuditLogService,
@@ -178,9 +176,9 @@ export class ReferralService {
             TransactionType.GIFT,
           ],
         })
-        .getRawOne();
+        .getRawOne<{ total: string | null }>();
 
-      const totalRevenue = parseFloat(revenueResult?.total || '0');
+      const totalRevenue = Number.parseFloat(revenueResult?.total || '0');
       const revenueSharingPercentage =
         await this.systemSettingsService.getNumber(
           'revenue_sharing_percentage',

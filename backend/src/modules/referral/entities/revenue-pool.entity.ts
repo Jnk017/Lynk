@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
@@ -34,7 +35,11 @@ export class RevenuePool {
   @Column({ type: 'decimal', precision: 18, scale: 8, default: 0 })
   dividendPerFounder: number;
 
-  @Column({ type: 'enum', enum: RevenuePoolStatus, default: RevenuePoolStatus.CALCULATING })
+  @Column({
+    type: 'enum',
+    enum: RevenuePoolStatus,
+    default: RevenuePoolStatus.CALCULATING,
+  })
   status: RevenuePoolStatus;
 
   @OneToMany(() => RevenueDistribution, (dist) => dist.pool)
@@ -45,4 +50,7 @@ export class RevenuePool {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

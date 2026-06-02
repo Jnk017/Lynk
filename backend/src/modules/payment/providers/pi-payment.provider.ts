@@ -31,12 +31,12 @@ interface PiPaymentResponse {
 export class PiPaymentProvider implements PaymentProvider {
   constructor(private readonly configService: ConfigService) {}
 
-  async createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
-    return {
+  createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult> {
+    return Promise.resolve({
       provider: TransactionProvider.PI_NETWORK,
       externalRef: `pi_pending_${input.userId}_${Date.now()}`,
       metadata: input.metadata,
-    };
+    });
   }
 
   async verifyPayment(input: VerifyPaymentInput): Promise<VerifyPaymentResult> {
@@ -83,13 +83,13 @@ export class PiPaymentProvider implements PaymentProvider {
     };
   }
 
-  async handleWebhook(payload: unknown): Promise<WebhookResult> {
+  handleWebhook(payload: unknown): Promise<WebhookResult> {
     const data = payload as PiPaymentResponse;
-    return {
+    return Promise.resolve({
       provider: TransactionProvider.PI_NETWORK,
       externalRef: data.identifier,
       processed: false,
       eventType: 'pi.payment.webhook_unimplemented',
-    };
+    });
   }
 }

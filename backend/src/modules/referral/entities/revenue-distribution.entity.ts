@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { RevenueDistributionStatus } from '../../../common/enums';
@@ -19,7 +20,9 @@ export class RevenueDistribution {
   @Column()
   poolId: string;
 
-  @ManyToOne(() => RevenuePool, (pool) => pool.distributions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => RevenuePool, (pool) => pool.distributions, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'pool_id' })
   pool: RevenuePool;
 
@@ -33,7 +36,11 @@ export class RevenueDistribution {
   @Column({ type: 'decimal', precision: 18, scale: 8 })
   amount: number;
 
-  @Column({ type: 'enum', enum: RevenueDistributionStatus, default: RevenueDistributionStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: RevenueDistributionStatus,
+    default: RevenueDistributionStatus.PENDING,
+  })
   status: RevenueDistributionStatus;
 
   @Column({ nullable: true })
@@ -44,4 +51,7 @@ export class RevenueDistribution {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }
