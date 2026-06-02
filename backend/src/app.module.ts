@@ -24,6 +24,11 @@ import { MarriageStake } from './modules/marriage/entities/marriage-stake.entity
 import { ReferralLog } from './modules/referral/entities/referral-log.entity';
 import { RevenuePool } from './modules/referral/entities/revenue-pool.entity';
 import { RevenueDistribution } from './modules/referral/entities/revenue-distribution.entity';
+import { PaymentWebhookLog } from './modules/payment/entities/payment-webhook-log.entity';
+import { Founder } from './modules/founder/entities/founder.entity';
+import { SystemSetting } from './modules/system-settings/entities/system-setting.entity';
+import { FeatureFlag } from './modules/feature-flag/entities/feature-flag.entity';
+import { AuditLog } from './modules/audit-log/entities/audit-log.entity';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -41,6 +46,10 @@ import { GiftModule } from './modules/gift/gift.module';
 import { AiModule } from './modules/ai/ai.module';
 import { S3Module } from './modules/s3/s3.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { FounderModule } from './modules/founder/founder.module';
+import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
+import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
+import { AuditLogModule } from './modules/audit-log/audit-log.module';
 
 @Module({
   imports: [
@@ -77,6 +86,11 @@ import { NotificationModule } from './modules/notification/notification.module';
           ReferralLog,
           RevenuePool,
           RevenueDistribution,
+          PaymentWebhookLog,
+          Founder,
+          SystemSetting,
+          FeatureFlag,
+          AuditLog,
         ],
         synchronize: configService.get<string>('nodeEnv') === 'development',
         logging: configService.get<string>('nodeEnv') === 'development',
@@ -95,9 +109,7 @@ import { NotificationModule } from './modules/notification/notification.module';
         const port = configService.get<number>('redis.port') || 6379;
         const password = configService.get<string>('redis.password');
         return {
-          config: password
-            ? { host, port, password }
-            : { host, port },
+          config: password ? { host, port, password } : { host, port },
         } as any;
       },
       inject: [ConfigService],
@@ -119,6 +131,10 @@ import { NotificationModule } from './modules/notification/notification.module';
     AiModule,
     S3Module,
     NotificationModule,
+    FounderModule,
+    SystemSettingsModule,
+    FeatureFlagModule,
+    AuditLogModule,
   ],
 })
 export class AppModule {}

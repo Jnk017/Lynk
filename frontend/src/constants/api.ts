@@ -44,7 +44,7 @@ export const API_ENDPOINTS = {
   },
   payment: {
     stripeIntent: '/payment/stripe/intent',
-    creditPi: '/payment/pi/credit',
+    creditPi: '/payment/pi/verify',
     transactions: '/payment/transactions',
   },
   referral: {
