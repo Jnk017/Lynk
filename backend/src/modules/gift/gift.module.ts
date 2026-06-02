@@ -7,7 +7,10 @@ import { GiftController } from './gift.controller';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([GiftCatalogItem, GiftSent, User]), NotificationModule],
+  imports: [
+    TypeOrmModule.forFeature([GiftCatalogItem, GiftSent, User]),
+    NotificationModule,
+  ],
   controllers: [GiftController],
   providers: [GiftService],
   exports: [GiftService],

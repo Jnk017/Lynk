@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { IsString, IsNumber, IsDateString, IsUUID, Min } from 'class-validator';
@@ -43,7 +50,10 @@ export class StakingController {
 
   @Post()
   @ApiOperation({ summary: 'Create anti-ghosting stake for an IRL date' })
-  create(@Request() req: { user: { id: string } }, @Body() dto: CreateStakeDto) {
+  create(
+    @Request() req: { user: { id: string } },
+    @Body() dto: CreateStakeDto,
+  ) {
     return this.stakingService.createStake(
       req.user.id,
       dto.partnerId,
@@ -60,6 +70,11 @@ export class StakingController {
     @Param('contractId') contractId: string,
     @Body() dto: ConfirmAttendanceDto,
   ) {
-    return this.stakingService.confirmAttendance(req.user.id, contractId, dto.lat, dto.lng);
+    return this.stakingService.confirmAttendance(
+      req.user.id,
+      contractId,
+      dto.lat,
+      dto.lng,
+    );
   }
 }

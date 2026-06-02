@@ -5,6 +5,8 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 
@@ -17,7 +19,7 @@ export class UserPrompt {
   userId: string;
 
   @ManyToOne(() => User, (user) => user.prompts, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Column()
@@ -34,4 +36,10 @@ export class UserPrompt {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }
