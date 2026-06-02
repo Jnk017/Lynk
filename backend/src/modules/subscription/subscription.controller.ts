@@ -1,27 +1,34 @@
-import { Controller, Get, Post, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsEnum, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiProperty,
+} from '@nestjs/swagger';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { SubscriptionService } from './subscription.service';
-import { SubscriptionTier, TransactionCurrency, TransactionProvider } from '../../common/enums';
+import { SubscriptionTier } from '../../common/enums';
 
 class SubscribeDto {
   @ApiProperty({ enum: SubscriptionTier })
   @IsEnum(SubscriptionTier)
   tier: SubscriptionTier;
 
-  @ApiProperty({ enum: TransactionCurrency })
-  @IsEnum(TransactionCurrency)
-  currency: TransactionCurrency;
-
-  @ApiProperty({ enum: TransactionProvider })
-  @IsEnum(TransactionProvider)
-  provider: TransactionProvider;
-
-  @ApiProperty({ description: 'External payment reference from provider' })
+  @ApiProperty({
+    description: 'Completed payment transaction id for paid plans',
+    required: false,
+  })
+  @IsOptional()
   @IsString()
-  externalRef: string;
+  paymentTransactionId?: string;
 }
 
 @ApiTags('subscription')
@@ -38,14 +45,17 @@ export class SubscriptionController {
   @Post('subscribe')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Subscribe to a plan (after payment confirmation)' })
-  subscribe(@Request() req: { user: { id: string } }, @Body() dto: SubscribeDto) {
+  @ApiOperation({
+    summary: 'Activate subscription after a verified server-side payment',
+  })
+  subscribe(
+    @Request() req: { user: { id: string } },
+    @Body() dto: SubscribeDto,
+  ) {
     return this.subscriptionService.subscribeToPlan(
       req.user.id,
       dto.tier,
-      dto.currency,
-      dto.provider,
-      dto.externalRef,
+      dto.paymentTransactionId,
     );
   }
 }

@@ -8,10 +8,15 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from '../user/entities/user.entity';
 import { ReferralLog } from '../referral/entities/referral-log.entity';
+import { RefreshToken } from './entities/refresh-token.entity';
+import { AuditLogModule } from '../audit-log/audit-log.module';
+import { FounderModule } from '../founder/founder.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, ReferralLog]),
+    TypeOrmModule.forFeature([User, ReferralLog, RefreshToken]),
+    FounderModule,
+    AuditLogModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

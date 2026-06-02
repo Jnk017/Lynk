@@ -6,6 +6,7 @@ import {
   MaxLength,
   IsPhoneNumber,
   IsEnum,
+  IsUUID,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Gender } from '../../../common/enums';
@@ -42,4 +43,12 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+
+  @ApiProperty({
+    required: false,
+    description: 'Stable client device identifier',
+  })
+  @IsOptional()
+  @IsUUID()
+  deviceId?: string;
 }
