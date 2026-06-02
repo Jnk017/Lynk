@@ -14,8 +14,18 @@ import { User } from '../user/entities/user.entity';
 import { ReferralLog } from '../referral/entities/referral-log.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto, PiAuthDto } from './dto/login.dto';
-import { JWT_ACCESS_EXPIRY, JWT_REFRESH_EXPIRY, MAX_FOUNDERS } from '../../common/constants';
+import { JWT_ACCESS_EXPIRY, JWT_REFRESH_EXPIRY } from '../../common/constants';
 import { ReferralStatus } from '../../common/enums';
+import { FounderService } from '../founder/founder.service';
+
+interface JwtRefreshPayload {
+  sub: string;
+}
+
+interface PiMeResponse {
+  uid: string;
+  username: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -27,6 +37,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private dataSource: DataSource,
+    private founderService: FounderService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -42,7 +53,9 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('An account with this email or phone already exists');
+      throw new ConflictException(
+        'An account with this email or phone already exists',
+      );
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -53,12 +66,6 @@ export class AuthService {
     await queryRunner.startTransaction();
 
     try {
-      const totalUsers = await queryRunner.manager.count(User);
-
-      // Assign Founder status to the first 2500 users.
-      const isFounder = totalUsers < MAX_FOUNDERS;
-      const founderRank = isFounder ? totalUsers + 1 : undefined;
-
       let referredBy: User | null = null;
       if (dto.referralCode) {
         referredBy = await queryRunner.manager.findOne(User, {
@@ -74,11 +81,14 @@ export class AuthService {
         gender: dto.gender,
         referralCode,
         referredById: referredBy?.id,
-        isFounder,
-        founderRank,
       });
 
       const savedUser = await queryRunner.manager.save(user);
+
+      await this.founderService.allocateFounderSlotWithManager(
+        queryRunner.manager,
+        savedUser.id,
+      );
 
       if (referredBy) {
         await queryRunner.manager.save(ReferralLog, {
@@ -112,7 +122,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -134,18 +147,29 @@ export class AuthService {
     });
 
     if (!user) {
-      const referralCode = this.generateReferralCode();
-      const totalUsers = await this.userRepository.count();
-      const isFounder = totalUsers < MAX_FOUNDERS;
-      const founderRank = isFounder ? totalUsers + 1 : undefined;
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
 
-      user = await this.userRepository.save({
-        piWalletAddress: piUser.uid,
-        displayName: piUser.username,
-        referralCode,
-        isFounder,
-        founderRank,
-      });
+      try {
+        user = await queryRunner.manager.save(User, {
+          piWalletAddress: piUser.uid,
+          displayName: piUser.username,
+          referralCode: this.generateReferralCode(),
+        });
+
+        await this.founderService.allocateFounderSlotWithManager(
+          queryRunner.manager,
+          user.id,
+        );
+
+        await queryRunner.commitTransaction();
+      } catch (error) {
+        await queryRunner.rollbackTransaction();
+        throw error;
+      } finally {
+        await queryRunner.release();
+      }
     }
 
     const tokens = await this.generateTokens(user);
@@ -154,11 +178,13 @@ export class AuthService {
 
   async refreshTokens(refreshToken: string) {
     try {
-      const payload = this.jwtService.verify(refreshToken, {
+      const payload = this.jwtService.verify<JwtRefreshPayload>(refreshToken, {
         secret: this.configService.get<string>('jwt.refreshSecret'),
       });
 
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user || user.isBanned) {
         throw new UnauthorizedException('Invalid session');
       }
@@ -186,11 +212,16 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async verifyPiToken(accessToken: string): Promise<{ uid: string; username: string }> {
+  private async verifyPiToken(
+    accessToken: string,
+  ): Promise<{ uid: string; username: string }> {
     const axios = await import('axios');
-    const response = await axios.default.get('https://api.minepi.com/v2/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const response = await axios.default.get<PiMeResponse>(
+      'https://api.minepi.com/v2/me',
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
     return response.data;
   }
 
@@ -199,7 +230,24 @@ export class AuthService {
   }
 
   private sanitizeUser(user: User) {
-    const { passwordHash, ...sanitized } = user as User & { passwordHash?: string };
-    return sanitized;
+    return {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      piWalletAddress: user.piWalletAddress,
+      displayName: user.displayName,
+      gender: user.gender,
+      referralCode: user.referralCode,
+      isFounder: user.isFounder,
+      founderRank: user.founderRank,
+      isRevenueSharingActive: user.isRevenueSharingActive,
+      verificationStatus: user.verificationStatus,
+      trustScore: user.trustScore,
+      subscriptionPlanId: user.subscriptionPlanId,
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+      isProfileComplete: user.isProfileComplete,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   }
 }

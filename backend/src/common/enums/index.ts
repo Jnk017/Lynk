@@ -61,6 +61,7 @@ export enum TransactionProvider {
   STRIPE = 'stripe',
   AVADAPAY = 'avadapay',
   MONEROO = 'moneroo',
+  COINBASE_COMMERCE = 'coinbase_commerce',
   INTERNAL = 'internal',
 }
 

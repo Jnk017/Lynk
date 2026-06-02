@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
   ManyToOne,
   OneToMany,
@@ -31,6 +32,7 @@ export class User {
   passwordHash: string;
 
   @Column({ unique: true, nullable: true })
+  @Index()
   piWalletAddress: string;
 
   @Column({ nullable: true })
@@ -47,7 +49,7 @@ export class User {
   referredById: string;
 
   @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'referred_by_id' })
+  @JoinColumn({ name: 'referredById' })
   referredBy: User;
 
   @Column({ default: 0 })
@@ -75,7 +77,12 @@ export class User {
   @Column({ nullable: true })
   birthdate: Date;
 
-  @Column({ type: 'enum', enum: Gender, nullable: true })
+  @Column({
+    type: 'enum',
+    enum: Gender,
+    enumName: 'gender_enum',
+    nullable: true,
+  })
   gender: Gender;
 
   @Column({ type: 'jsonb', default: '[]' })
@@ -84,7 +91,12 @@ export class User {
   @Column({ type: 'jsonb', nullable: true })
   location: { lat: number; lng: number; city?: string; country?: string };
 
-  @Column({ type: 'enum', enum: VerificationStatus, default: VerificationStatus.NONE })
+  @Column({
+    type: 'enum',
+    enum: VerificationStatus,
+    enumName: 'verification_status_enum',
+    default: VerificationStatus.NONE,
+  })
   verificationStatus: VerificationStatus;
 
   @Column({ nullable: true })
@@ -100,7 +112,7 @@ export class User {
   subscriptionPlanId: string;
 
   @ManyToOne(() => SubscriptionPlan, { nullable: true, eager: true })
-  @JoinColumn({ name: 'subscription_plan_id' })
+  @JoinColumn({ name: 'subscriptionPlanId' })
   subscriptionPlan: SubscriptionPlan;
 
   @Column({ nullable: true })
@@ -162,4 +174,7 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

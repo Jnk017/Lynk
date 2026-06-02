@@ -1,10 +1,7 @@
 import { DataSource } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
-
-const configService = new ConfigService();
 
 export default new DataSource({
   type: 'postgres',
@@ -15,5 +12,5 @@ export default new DataSource({
   database: process.env.DB_NAME || 'lynk_db',
   entities: ['src/**/*.entity.ts'],
   migrations: ['src/database/migrations/*.ts'],
-  synchronize: false,
+  synchronize: process.env.DB_SYNCHRONIZE === 'true',
 });

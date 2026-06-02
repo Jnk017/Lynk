@@ -5,12 +5,16 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { ReferralStatus } from '../../../common/enums';
 import { User } from '../../user/entities/user.entity';
 
 @Entity('referral_logs')
+@Index(['referrerId'])
+@Index(['refereeId'])
 export class ReferralLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -19,17 +23,22 @@ export class ReferralLog {
   referrerId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'referrer_id' })
+  @JoinColumn({ name: 'referrerId' })
   referrer: User;
 
   @Column()
   refereeId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'referee_id' })
+  @JoinColumn({ name: 'refereeId' })
   referee: User;
 
-  @Column({ type: 'enum', enum: ReferralStatus, default: ReferralStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: ReferralStatus,
+    enumName: 'referral_status_enum',
+    default: ReferralStatus.PENDING,
+  })
   status: ReferralStatus;
 
   @Column({ default: false })
@@ -50,4 +59,7 @@ export class ReferralLog {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }
