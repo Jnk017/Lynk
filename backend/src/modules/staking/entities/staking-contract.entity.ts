@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { StakingContractStatus } from '../../../common/enums';
@@ -37,7 +38,11 @@ export class StakingContract {
   @Column({ type: 'decimal', precision: 18, scale: 8 })
   stakeAmountPiEach: number;
 
-  @Column({ type: 'enum', enum: StakingContractStatus, default: StakingContractStatus.ACTIVE })
+  @Column({
+    type: 'enum',
+    enum: StakingContractStatus,
+    default: StakingContractStatus.ACTIVE,
+  })
   status: StakingContractStatus;
 
   @Column({ nullable: true })
@@ -69,4 +74,7 @@ export class StakingContract {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

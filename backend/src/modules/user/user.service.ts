@@ -53,21 +53,51 @@ export class UserService {
   async markVerified(userId: string): Promise<User> {
     const user = await this.findById(userId);
     user.verificationStatus = VerificationStatus.VERIFIED;
-    user.trustScore = Math.min(100, Number(user.trustScore) + TRUST_SCORE_VERIFICATION_BONUS);
+    user.trustScore = Math.min(
+      100,
+      Number(user.trustScore) + TRUST_SCORE_VERIFICATION_BONUS,
+    );
     return this.userRepository.save(user);
   }
 
-  async getPublicProfile(viewerId: string, targetUserId: string): Promise<Partial<User>> {
+  async getPublicProfile(
+    _viewerId: string,
+    targetUserId: string,
+  ): Promise<Partial<User>> {
     const user = await this.userRepository.findOne({
       where: { id: targetUserId },
       relations: ['media', 'prompts', 'subscriptionPlan'],
     });
     if (!user) throw new NotFoundException('User not found');
 
-    const { passwordHash, email, phone, piWalletAddress, fiatBalance, piBalance, ...publicData } =
-      user as User & { passwordHash?: string };
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      bio: user.bio,
+      birthdate: user.birthdate,
+      gender: user.gender,
+      lifestyleTags: user.lifestyleTags,
+      location: user.location,
+      verificationStatus: user.verificationStatus,
+      trustScore: user.trustScore,
+      subscriptionPlan: user.subscriptionPlan,
+      isOnline: user.isOnline,
+      lastSeen: user.lastSeen,
+      isProfileComplete: user.isProfileComplete,
+      media: user.media,
+      prompts: user.prompts,
+      isFounder: user.isFounder,
+      founderRank: user.founderRank,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
 
-    return publicData;
+  async updateVerificationDocuments(
+    userId: string,
+    fields: Pick<User, 'livenessVideoUrl'> | Pick<User, 'kycDocumentUrl'>,
+  ): Promise<void> {
+    await this.userRepository.update(userId, fields);
   }
 
   async searchUsers(query: string, limit = 20): Promise<User[]> {

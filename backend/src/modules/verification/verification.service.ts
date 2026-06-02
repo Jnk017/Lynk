@@ -1,6 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { RekognitionClient, DetectFacesCommand, Attribute } from '@aws-sdk/client-rekognition';
+import {
+  RekognitionClient,
+  DetectFacesCommand,
+  Attribute,
+} from '@aws-sdk/client-rekognition';
 import { S3Service } from '../s3/s3.service';
 import { UserService } from '../user/user.service';
 import { ReferralService } from '../referral/referral.service';
@@ -28,7 +32,10 @@ export class VerificationService {
    * Performs liveness detection on a selfie video frame using AWS Rekognition.
    * Checks that: a face is detected, eyes are open, face is not masked.
    */
-  async verifyLiveness(userId: string, imageBuffer: Buffer): Promise<{ passed: boolean; reason?: string }> {
+  async verifyLiveness(
+    userId: string,
+    imageBuffer: Buffer,
+  ): Promise<{ passed: boolean; reason?: string }> {
     const command = new DetectFacesCommand({
       Image: { Bytes: imageBuffer },
       Attributes: [Attribute.ALL],
@@ -42,7 +49,10 @@ export class VerificationService {
     }
 
     if (faceDetails.length > 1) {
-      return { passed: false, reason: 'Multiple faces detected – please use a solo selfie' };
+      return {
+        passed: false,
+        reason: 'Multiple faces detected – please use a solo selfie',
+      };
     }
 
     const face = faceDetails[0];
@@ -52,21 +62,42 @@ export class VerificationService {
     }
 
     if ((face.Confidence || 0) < 95) {
-      return { passed: false, reason: 'Face confidence too low – please use better lighting' };
+      return {
+        passed: false,
+        reason: 'Face confidence too low – please use better lighting',
+      };
     }
 
     const s3Key = `verifications/${userId}/liveness_${Date.now()}.jpg`;
-    const livenessVideoUrl = await this.s3Service.uploadBuffer(imageBuffer, s3Key, 'image/jpeg');
+    const livenessVideoUrl = await this.s3Service.uploadBuffer(
+      imageBuffer,
+      s3Key,
+      'image/jpeg',
+    );
 
+    await this.userService.updateVerificationDocuments(userId, {
+      livenessVideoUrl,
+    });
     await this.userService.markVerified(userId);
     await this.referralService.onUserVerified(userId);
 
     return { passed: true };
   }
 
-  async submitKyc(userId: string, documentBuffer: Buffer, documentType: string): Promise<void> {
+  async submitKyc(
+    userId: string,
+    documentBuffer: Buffer,
+    documentType: string,
+  ): Promise<void> {
     const s3Key = `kyc/${userId}/${documentType}_${Date.now()}.jpg`;
-    const kycUrl = await this.s3Service.uploadBuffer(documentBuffer, s3Key, 'image/jpeg');
+    const kycDocumentUrl = await this.s3Service.uploadBuffer(
+      documentBuffer,
+      s3Key,
+      'image/jpeg',
+    );
+    await this.userService.updateVerificationDocuments(userId, {
+      kycDocumentUrl,
+    });
     // KYC review is manual or via a third-party provider; store the document URL for review
   }
 }

@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
   ManyToOne,
   OneToMany,
@@ -84,7 +85,11 @@ export class User {
   @Column({ type: 'jsonb', nullable: true })
   location: { lat: number; lng: number; city?: string; country?: string };
 
-  @Column({ type: 'enum', enum: VerificationStatus, default: VerificationStatus.NONE })
+  @Column({
+    type: 'enum',
+    enum: VerificationStatus,
+    default: VerificationStatus.NONE,
+  })
   verificationStatus: VerificationStatus;
 
   @Column({ nullable: true })
@@ -162,4 +167,7 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

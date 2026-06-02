@@ -8,10 +8,12 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from '../user/entities/user.entity';
 import { ReferralLog } from '../referral/entities/referral-log.entity';
+import { FounderModule } from '../founder/founder.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, ReferralLog]),
+    FounderModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { MatchmakingSessionStatus } from '../../../common/enums';
@@ -27,7 +28,11 @@ export class MatchmakingSession {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ type: 'enum', enum: MatchmakingSessionStatus, default: MatchmakingSessionStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: MatchmakingSessionStatus,
+    default: MatchmakingSessionStatus.PENDING,
+  })
   status: MatchmakingSessionStatus;
 
   @Column({ nullable: true })
@@ -76,4 +81,7 @@ export class MatchmakingSession {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

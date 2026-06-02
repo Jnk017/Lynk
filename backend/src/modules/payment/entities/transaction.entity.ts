@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import {
@@ -39,7 +40,11 @@ export class Transaction {
   @Column({ type: 'enum', enum: TransactionProvider })
   provider: TransactionProvider;
 
-  @Column({ type: 'enum', enum: TransactionStatus, default: TransactionStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: TransactionStatus,
+    default: TransactionStatus.PENDING,
+  })
   status: TransactionStatus;
 
   @Column({ nullable: true, unique: true })
@@ -53,4 +58,7 @@ export class Transaction {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

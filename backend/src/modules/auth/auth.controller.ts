@@ -13,7 +13,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
-import { LoginDto, PiAuthDto, RefreshTokenDto, GoogleAuthDto } from './dto/login.dto';
+import { LoginDto, PiAuthDto, RefreshTokenDto } from './dto/login.dto';
 
 @ApiTags('auth')
 @Controller('auth')
