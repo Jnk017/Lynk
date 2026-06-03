@@ -5,6 +5,15 @@ export enum VerificationStatus {
   REJECTED = 'rejected',
 }
 
+export enum UserRole {
+  USER = 'user',
+  PREMIUM_USER = 'premium_user',
+  FOUNDER = 'founder',
+  MODERATOR = 'moderator',
+  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin',
+}
+
 export enum SubscriptionTier {
   BRONZE = 'bronze',
   SILVER = 'silver',
@@ -61,6 +70,7 @@ export enum TransactionProvider {
   STRIPE = 'stripe',
   AVADAPAY = 'avadapay',
   MONEROO = 'moneroo',
+  COINBASE_COMMERCE = 'coinbase_commerce',
   INTERNAL = 'internal',
 }
 
@@ -105,14 +115,26 @@ export enum MatchmakingSessionStatus {
 
 export enum RevenuePoolStatus {
   CALCULATING = 'calculating',
+  PROCESSING = 'processing',
   DISTRIBUTING = 'distributing',
   COMPLETED = 'completed',
+  FAILED = 'failed',
+  CANCELLED = 'cancelled',
 }
 
 export enum RevenueDistributionStatus {
   PENDING = 'pending',
+  PROCESSING = 'processing',
   PAID = 'paid',
   FAILED = 'failed',
+  CANCELLED = 'cancelled',
+}
+
+export enum ReportStatus {
+  PENDING = 'pending',
+  REVIEWING = 'reviewing',
+  RESOLVED = 'resolved',
+  DISMISSED = 'dismissed',
 }
 
 export enum NotificationType {

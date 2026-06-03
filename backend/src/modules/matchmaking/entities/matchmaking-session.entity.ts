@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { MatchmakingSessionStatus } from '../../../common/enums';
@@ -24,45 +25,50 @@ export class MatchmakingSession {
   userId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ type: 'enum', enum: MatchmakingSessionStatus, default: MatchmakingSessionStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: MatchmakingSessionStatus,
+    enumName: 'matchmaking_session_status_enum',
+    default: MatchmakingSessionStatus.PENDING,
+  })
   status: MatchmakingSessionStatus;
 
   @Column({ nullable: true })
   profile1Id: string;
 
   @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'profile_1_id' })
+  @JoinColumn({ name: 'profile1Id' })
   profile1: User;
 
   @Column({ nullable: true })
   profile2Id: string;
 
   @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'profile_2_id' })
+  @JoinColumn({ name: 'profile2Id' })
   profile2: User;
 
   @Column({ nullable: true })
   profile3Id: string;
 
   @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'profile_3_id' })
+  @JoinColumn({ name: 'profile3Id' })
   profile3: User;
 
   @Column({ nullable: true })
   droppedProfileId: string;
 
   @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'dropped_profile_id' })
+  @JoinColumn({ name: 'droppedProfileId' })
   droppedProfile: User;
 
   @Column({ nullable: true })
   finalChoiceId: string;
 
   @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'final_choice_id' })
+  @JoinColumn({ name: 'finalChoiceId' })
   finalChoice: User;
 
   @Column({ nullable: true })
@@ -76,4 +82,7 @@ export class MatchmakingSession {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

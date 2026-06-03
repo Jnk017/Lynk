@@ -3,16 +3,22 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import {
+  parseAllowedOrigins,
+  validateProductionEnv,
+} from './config/env.validation';
 import { SubscriptionService } from './modules/subscription/subscription.service';
 import { GiftService } from './modules/gift/gift.service';
 
 async function bootstrap() {
+  validateProductionEnv();
+
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // Security
   app.use(helmet());
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+    origin: parseAllowedOrigins(),
     credentials: true,
   });
 
@@ -63,4 +69,4 @@ async function bootstrap() {
   console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
 }
 
-bootstrap();
+void bootstrap();
