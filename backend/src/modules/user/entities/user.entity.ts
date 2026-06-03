@@ -10,7 +10,7 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { VerificationStatus, Gender } from '../../../common/enums';
+import { VerificationStatus, Gender, UserRole } from '../../../common/enums';
 import { SubscriptionPlan } from '../../subscription/entities/subscription-plan.entity';
 import { ProfileMedia } from '../../profile/entities/profile-media.entity';
 import { UserPrompt } from '../../profile/entities/user-prompt.entity';
@@ -141,6 +141,15 @@ export class User {
 
   @Column({ default: false })
   blockContacts: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    enumName: 'user_role_enum',
+    default: UserRole.USER,
+  })
+  @Index()
+  role: UserRole;
 
   @Column({ default: false })
   isBanned: boolean;

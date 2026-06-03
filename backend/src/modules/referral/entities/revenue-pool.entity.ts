@@ -6,6 +6,7 @@ import {
   DeleteDateColumn,
   UpdateDateColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { RevenuePoolStatus } from '../../../common/enums';
 import { RevenueDistribution } from './revenue-distribution.entity';
@@ -15,6 +16,8 @@ import { RevenueDistribution } from './revenue-distribution.entity';
  * distributed equally among all Founders with active revenue sharing.
  */
 @Entity('revenue_pools')
+@Index(['period'], { unique: true })
+@Index(['idempotencyKey'], { unique: true })
 export class RevenuePool {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -22,6 +25,9 @@ export class RevenuePool {
   /** Format: "2025-01" */
   @Column({ unique: true })
   period: string;
+
+  @Column({ unique: true })
+  idempotencyKey: string;
 
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
   totalRevenue: number;
