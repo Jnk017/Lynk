@@ -9,9 +9,6 @@ import {
   Request,
   UploadedFile,
   UseInterceptors,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -52,15 +49,7 @@ export class ProfileController {
   @ApiOperation({ summary: 'Upload a profile photo' })
   uploadPhoto(
     @Request() req: { user: { id: string } },
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     return this.profileService.uploadMedia(req.user.id, file, MediaType.PHOTO);
   }
@@ -73,15 +62,7 @@ export class ProfileController {
   @ApiOperation({ summary: 'Upload a profile video' })
   uploadVideo(
     @Request() req: { user: { id: string } },
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: /^video\/(mp4|quicktime|webm)$/ }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File,
   ) {
     return this.profileService.uploadMedia(req.user.id, file, MediaType.VIDEO);
   }

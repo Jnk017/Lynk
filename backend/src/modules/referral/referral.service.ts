@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, EntityManager } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import { User } from '../user/entities/user.entity';
 import { ReferralLog } from './entities/referral-log.entity';
@@ -22,30 +22,6 @@ import {
 } from '../../common/constants';
 import { SystemSettingsService } from '../system-settings/system-settings.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
-
-export interface RevenueDistributionOptions {
-  dryRun?: boolean;
-}
-
-export interface RevenueDistributionResult {
-  period: string;
-  dryRun: boolean;
-  idempotent: boolean;
-  poolId?: string;
-  status: RevenuePoolStatus;
-  totalRevenue: number;
-  revenueSharingPercentage: number;
-  distributableAmount: number;
-  activeFounderCount: number;
-  dividendPerFounder: number;
-  distributionCount: number;
-}
-
-interface RevenuePeriodBounds {
-  period: string;
-  start: Date;
-  end: Date;
-}
 
 @Injectable()
 export class ReferralService {
@@ -145,19 +121,16 @@ export class ReferralService {
     );
   }
 
-  async distributeMonthlyDividends(
-    month?: string,
-    options: RevenueDistributionOptions = {},
-  ): Promise<RevenueDistributionResult> {
-    const { period, start, end } = this.resolveRevenuePeriod(month);
-    const dryRun = options.dryRun === true;
-
     this.logger.log(
-      `${dryRun ? 'Simulating' : 'Starting'} monthly revenue distribution for period: ${period}`,
+      `Starting monthly revenue distribution for period: ${period}`,
     );
 
-    if (dryRun) {
-      return this.calculateRevenueDistributionPreview(period, start, end);
+    const existing = await this.revenuePoolRepository.findOne({
+      where: { period },
+    });
+    if (existing && existing.status !== RevenuePoolStatus.CALCULATING) {
+      this.logger.warn(`Distribution for period ${period} already processed`);
+      return;
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -170,8 +143,55 @@ export class ReferralService {
         [period],
       );
 
-      const existing = await queryRunner.manager.findOne(RevenuePool, {
-        where: { period },
+      // Calculate total revenue for the period (subscriptions + boosts + gifts)
+      const startOfMonth = new Date(
+        lastMonth.getFullYear(),
+        lastMonth.getMonth(),
+        1,
+      );
+      const endOfMonth = new Date(
+        lastMonth.getFullYear(),
+        lastMonth.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+      );
+
+      const revenueResult = await queryRunner.manager
+        .createQueryBuilder(Transaction, 'tx')
+        .select('SUM(CAST(tx.amount AS DECIMAL))', 'total')
+        .where('tx.status = :status', { status: TransactionStatus.COMPLETED })
+        .andWhere('tx.currency = :currency', {
+          currency: TransactionCurrency.USD,
+        })
+        .andWhere('tx.createdAt BETWEEN :start AND :end', {
+          start: startOfMonth,
+          end: endOfMonth,
+        })
+        .andWhere('tx.type IN (:...types)', {
+          types: [
+            TransactionType.SUBSCRIPTION,
+            TransactionType.BOOST,
+            TransactionType.GIFT,
+          ],
+        })
+        .getRawOne<{ total: string | null }>();
+
+      const totalRevenue = Number.parseFloat(revenueResult?.total || '0');
+      const revenueSharingPercentage =
+        await this.systemSettingsService.getNumber(
+          'revenue_sharing_percentage',
+          REVENUE_SHARING_PERCENTAGE,
+        );
+      const distributableAmount = totalRevenue * revenueSharingPercentage;
+
+      const eligibleFounders = await queryRunner.manager.find(User, {
+        where: {
+          isFounder: true,
+          isRevenueSharingActive: true,
+          isBanned: false,
+        },
       });
       if (existing && existing.status === RevenuePoolStatus.COMPLETED) {
         const existingDistributions = await queryRunner.manager.count(
@@ -186,12 +206,9 @@ export class ReferralService {
         });
       }
 
-      const preview = await this.calculateRevenueDistributionPreview(
-        period,
-        start,
-        end,
-        queryRunner.manager,
-      );
+      const activeFounderCount = eligibleFounders.length;
+      const dividendPerFounder =
+        activeFounderCount > 0 ? distributableAmount / activeFounderCount : 0;
 
       let pool = existing || new RevenuePool();
       pool.period = period;
@@ -211,12 +228,10 @@ export class ReferralService {
         await queryRunner.manager.save(RevenuePool, pool);
         await this.recordRevenueDistributionAudit(pool, preview, 0, false);
         await queryRunner.commitTransaction();
-        return this.toDistributionResult(pool, {
-          dryRun: false,
-          idempotent: false,
-          distributionCount: 0,
-          revenueSharingPercentage: preview.revenueSharingPercentage,
-        });
+        this.logger.log(
+          `No eligible founders for period ${period}. Pool closed.`,
+        );
+        return;
       }
 
       const eligibleFounders = await this.findEligibleFounders(
@@ -239,16 +254,16 @@ export class ReferralService {
           poolId: pool.id,
           founderId: founder.id,
           month: period,
-          amount: preview.dividendPerFounder,
+          amount: dividendPerFounder,
           status: RevenueDistributionStatus.PAID,
           paidAt: new Date(),
         });
 
+        // Credit founder's fiat balance
         await queryRunner.manager.increment(
           User,
           { id: founder.id },
-          'fiatBalance',
-          preview.dividendPerFounder,
+          'fiatBalance',          dividendPerFounder,
         );
 
         await queryRunner.manager.save(Transaction, {
@@ -278,12 +293,18 @@ export class ReferralService {
       pool.status = RevenuePoolStatus.COMPLETED;
       await queryRunner.manager.save(RevenuePool, pool);
 
-      await this.recordRevenueDistributionAudit(
-        pool,
-        preview,
-        distributions.length,
-        false,
-      );
+      await this.auditLogService.record({
+        action: 'revenue_sharing.distribute_monthly_dividends',
+        targetType: 'RevenuePool',
+        targetId: pool.id,
+        metadata: {
+          period,
+          totalRevenue,
+          distributableAmount,
+          activeFounderCount,
+          dividendPerFounder,
+        },
+      });
 
       await queryRunner.commitTransaction();
       this.logger.log(
