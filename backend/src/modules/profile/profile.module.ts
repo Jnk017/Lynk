@@ -8,7 +8,11 @@ import { S3Module } from '../s3/s3.module';
 import { AiModule } from '../ai/ai.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ProfileMedia, UserPrompt]), S3Module, AiModule],
+  imports: [
+    TypeOrmModule.forFeature([ProfileMedia, UserPrompt]),
+    S3Module,
+    AiModule,
+  ],
   controllers: [ProfileController],
   providers: [ProfileService],
   exports: [ProfileService],

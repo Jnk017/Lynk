@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Not, In } from 'typeorm';
+import { Repository, DataSource, In } from 'typeorm';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { User } from '../user/entities/user.entity';
@@ -38,7 +38,11 @@ export class MatchmakingService {
     @InjectRedis() private redisClient: Redis,
   ) {}
 
-  async swipe(swiperId: string, swipedId: string, action: SwipeAction): Promise<{ matched: boolean; matchId?: string }> {
+  async swipe(
+    swiperId: string,
+    swipedId: string,
+    action: SwipeAction,
+  ): Promise<{ matched: boolean; matchId?: string }> {
     const swiper = await this.userRepository.findOne({
       where: { id: swiperId },
       relations: ['subscriptionPlan'],
@@ -46,12 +50,15 @@ export class MatchmakingService {
     if (!swiper) throw new NotFoundException('User not found');
 
     // Enforce daily swipe limits for Bronze tier
-    const tier = (swiper.subscriptionPlan?.name || SubscriptionTier.BRONZE) as SubscriptionTier;
+    const tier = swiper.subscriptionPlan?.name || SubscriptionTier.BRONZE;
     const limits = SUBSCRIPTION_LIMITS[tier];
 
     if (limits.dailySwipes !== Infinity) {
       const countKey = REDIS_KEYS.DAILY_SWIPES(swiperId);
-      const currentCount = parseInt((await this.redisClient.get(countKey)) || '0', 10);
+      const currentCount = parseInt(
+        (await this.redisClient.get(countKey)) || '0',
+        10,
+      );
       if (currentCount >= limits.dailySwipes) {
         throw new ForbiddenException(
           `Daily swipe limit reached (${limits.dailySwipes}). Upgrade to Silver or higher for unlimited swipes.`,
@@ -65,7 +72,9 @@ export class MatchmakingService {
       const superKey = `super_likes:${swiperId}`;
       const count = parseInt((await this.redisClient.get(superKey)) || '0', 10);
       if (count >= limits.dailySuperLikes) {
-        throw new ForbiddenException(`Daily Super Like limit reached (${limits.dailySuperLikes})`);
+        throw new ForbiddenException(
+          `Daily Super Like limit reached (${limits.dailySuperLikes})`,
+        );
       }
       const ttl = this.secondsUntilMidnight();
       await this.redisClient.set(superKey, count + 1, 'EX', ttl);
@@ -136,7 +145,11 @@ export class MatchmakingService {
     return { matched: false };
   }
 
-  async getDiscoveryFeed(userId: string, page = 1, limit = 10): Promise<User[]> {
+  async getDiscoveryFeed(
+    userId: string,
+    page = 1,
+    limit = 10,
+  ): Promise<User[]> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
@@ -146,7 +159,10 @@ export class MatchmakingService {
       .where('s.swiperId = :userId', { userId })
       .getRawMany();
 
-    const excludeIds = [userId, ...alreadySwiped.map((s: { s_swipedId: string }) => s.s_swipedId)];
+    const excludeIds = [
+      userId,
+      ...alreadySwiped.map((s: { s_swipedId: string }) => s.s_swipedId),
+    ];
 
     const query = this.userRepository
       .createQueryBuilder('user')
@@ -157,23 +173,35 @@ export class MatchmakingService {
 
     // Apply user preferences
     if (user.preferences?.genders?.length) {
-      query.andWhere('user.gender IN (:...genders)', { genders: user.preferences.genders });
+      query.andWhere('user.gender IN (:...genders)', {
+        genders: user.preferences.genders,
+      });
     }
 
     if (user.preferences?.ageMin || user.preferences?.ageMax) {
       const now = new Date();
       if (user.preferences.ageMin) {
-        const maxBirthdate = new Date(now.getFullYear() - user.preferences.ageMin, now.getMonth(), now.getDate());
+        const maxBirthdate = new Date(
+          now.getFullYear() - user.preferences.ageMin,
+          now.getMonth(),
+          now.getDate(),
+        );
         query.andWhere('user.birthdate <= :maxBirthdate', { maxBirthdate });
       }
       if (user.preferences.ageMax) {
-        const minBirthdate = new Date(now.getFullYear() - user.preferences.ageMax, now.getMonth(), now.getDate());
+        const minBirthdate = new Date(
+          now.getFullYear() - user.preferences.ageMax,
+          now.getMonth(),
+          now.getDate(),
+        );
         query.andWhere('user.birthdate >= :minBirthdate', { minBirthdate });
       }
     }
 
     // Prioritize boosted users and verified users in the feed
-    query.orderBy('user.trustScore', 'DESC').addOrderBy('user.createdAt', 'DESC');
+    query
+      .orderBy('user.trustScore', 'DESC')
+      .addOrderBy('user.createdAt', 'DESC');
 
     return query
       .skip((page - 1) * limit)
@@ -192,7 +220,9 @@ export class MatchmakingService {
     });
 
     if (!user?.subscriptionPlan?.hasSmartMatchmaking) {
-      throw new ForbiddenException('AI Matchmaker is a Platinum exclusive feature');
+      throw new ForbiddenException(
+        'AI Matchmaker is a Platinum exclusive feature',
+      );
     }
 
     // Ensure only one active session per quarter
@@ -202,7 +232,9 @@ export class MatchmakingService {
     });
 
     if (existingSession) {
-      throw new BadRequestException(`You have already used your AI Matchmaker session for ${currentQuarter}`);
+      throw new BadRequestException(
+        `You have already used your AI Matchmaker session for ${currentQuarter}`,
+      );
     }
 
     const candidates = await this.userRepository
@@ -216,7 +248,9 @@ export class MatchmakingService {
       .getMany();
 
     if (candidates.length < 3) {
-      throw new BadRequestException('Not enough verified profiles available for AI Matchmaker');
+      throw new BadRequestException(
+        'Not enough verified profiles available for AI Matchmaker',
+      );
     }
 
     const session = await this.sessionRepository.save({
@@ -234,7 +268,11 @@ export class MatchmakingService {
     });
   }
 
-  async dropSessionProfile(userId: string, sessionId: string, profileId: string): Promise<MatchmakingSession> {
+  async dropSessionProfile(
+    userId: string,
+    sessionId: string,
+    profileId: string,
+  ): Promise<MatchmakingSession> {
     const session = await this.sessionRepository.findOne({
       where: { id: sessionId, userId },
     });
@@ -243,7 +281,11 @@ export class MatchmakingService {
     if (session.status !== MatchmakingSessionStatus.IN_PROGRESS) {
       throw new BadRequestException('Session is not in progress');
     }
-    if (![session.profile1Id, session.profile2Id, session.profile3Id].includes(profileId)) {
+    if (
+      ![session.profile1Id, session.profile2Id, session.profile3Id].includes(
+        profileId,
+      )
+    ) {
       throw new BadRequestException('Profile does not belong to this session');
     }
 
@@ -253,7 +295,11 @@ export class MatchmakingService {
     return this.sessionRepository.save(session);
   }
 
-  async makeFinalChoice(userId: string, sessionId: string, finalProfileId: string): Promise<Match> {
+  async makeFinalChoice(
+    userId: string,
+    sessionId: string,
+    finalProfileId: string,
+  ): Promise<Match> {
     const session = await this.sessionRepository.findOne({
       where: { id: sessionId, userId },
     });
@@ -263,9 +309,11 @@ export class MatchmakingService {
       throw new BadRequestException('Session is not awaiting final choice');
     }
 
-    const remainingProfiles = [session.profile1Id, session.profile2Id, session.profile3Id].filter(
-      (id) => id !== session.droppedProfileId,
-    );
+    const remainingProfiles = [
+      session.profile1Id,
+      session.profile2Id,
+      session.profile3Id,
+    ].filter((id) => id !== session.droppedProfileId);
 
     if (!remainingProfiles.includes(finalProfileId)) {
       throw new BadRequestException('Invalid final choice');

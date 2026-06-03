@@ -1,15 +1,19 @@
 {
   "name": "frontend",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "lint": "npm run typecheck",
+    "doctor": "npx --yes expo-doctor"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-masked-view/masked-view": "0.3.2",
     "@shopify/flash-list": "2.0.2",
     "@tanstack/react-query": "^5.100.10",
     "axios": "^1.16.0",
@@ -44,7 +48,9 @@
   "private": true,
   "config": {
     "npm": {
-      "installOptions": ["--legacy-peer-deps"]
+      "installOptions": [
+        "--legacy-peer-deps"
+      ]
     }
   }
 }

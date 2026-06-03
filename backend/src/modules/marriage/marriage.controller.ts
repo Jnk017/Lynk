@@ -1,7 +1,14 @@
-import { Controller, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsUUID, IsNumber, IsString, IsUrl, Min } from 'class-validator';
+import { IsUUID, IsNumber, IsString, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { MarriageService } from './marriage.service';
 
@@ -35,8 +42,15 @@ export class MarriageController {
 
   @Post()
   @ApiOperation({ summary: 'Initiate a Marriage Stake (Gold/Platinum only)' })
-  initiate(@Request() req: { user: { id: string } }, @Body() dto: InitiateMarriageStakeDto) {
-    return this.marriageService.initiateStake(req.user.id, dto.partnerId, dto.amountPi);
+  initiate(
+    @Request() req: { user: { id: string } },
+    @Body() dto: InitiateMarriageStakeDto,
+  ) {
+    return this.marriageService.initiateStake(
+      req.user.id,
+      dto.partnerId,
+      dto.amountPi,
+    );
   }
 
   @Post(':stakeId/proof')
@@ -46,6 +60,11 @@ export class MarriageController {
     @Param('stakeId') stakeId: string,
     @Body() dto: SubmitMarriageProofDto,
   ) {
-    return this.marriageService.submitProof(req.user.id, stakeId, dto.marriageProofUrl, dto.marriagePhotoUrl);
+    return this.marriageService.submitProof(
+      req.user.id,
+      stakeId,
+      dto.marriageProofUrl,
+      dto.marriagePhotoUrl,
+    );
   }
 }
