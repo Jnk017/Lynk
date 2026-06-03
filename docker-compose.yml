@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: lynk
-      POSTGRES_PASSWORD: lynk_secret
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       POSTGRES_DB: lynk_db
     ports:
       - '5432:5432'
@@ -51,12 +51,12 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: lynk
-      DB_PASSWORD: lynk_secret
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
       DB_NAME: lynk_db
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change_me_in_production}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_in_production_refresh}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       AWS_REGION: ${AWS_REGION:-us-east-1}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
@@ -70,6 +70,12 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       PI_API_KEY: ${PI_API_KEY:-}
       PI_SANDBOX: ${PI_SANDBOX:-true}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?ALLOWED_ORIGINS is required}
+      COINBASE_COMMERCE_API_KEY: ${COINBASE_COMMERCE_API_KEY:-}
+      COINBASE_COMMERCE_WEBHOOK_SECRET: ${COINBASE_COMMERCE_WEBHOOK_SECRET:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      POSTHOG_API_KEY: ${POSTHOG_API_KEY:-}
+      POSTHOG_HOST: ${POSTHOG_HOST:-https://app.posthog.com}
     ports:
       - '3000:3000'
     volumes:

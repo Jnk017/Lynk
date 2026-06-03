@@ -37,7 +37,10 @@ export class UpdateProfileDto {
   @IsEnum(Gender)
   gender?: Gender;
 
-  @ApiProperty({ required: false, description: 'Array of lifestyle tag objects' })
+  @ApiProperty({
+    required: false,
+    description: 'Array of lifestyle tag objects',
+  })
   @IsOptional()
   @IsArray()
   lifestyleTags?: Record<string, unknown>[];
@@ -91,7 +94,10 @@ export class UpdatePreferencesDto {
   @IsArray()
   genders?: string[];
 
-  @ApiProperty({ required: false, description: 'Enable Bumble mode (matched user sends first message)' })
+  @ApiProperty({
+    required: false,
+    description: 'Enable Bumble mode (matched user sends first message)',
+  })
   @IsOptional()
   @IsBoolean()
   bumbleMode?: boolean;

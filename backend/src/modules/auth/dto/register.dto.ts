@@ -4,8 +4,10 @@ import {
   IsString,
   MinLength,
   MaxLength,
+  Matches,
   IsPhoneNumber,
   IsEnum,
+  IsUUID,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Gender } from '../../../common/enums';
@@ -21,10 +23,19 @@ export class RegisterDto {
   @IsEmail()
   email?: string;
 
-  @ApiProperty({ minLength: 8, maxLength: 64 })
+  @ApiProperty({
+    minLength: 12,
+    maxLength: 64,
+    description:
+      'Must include at least one lowercase letter, one uppercase letter, and one number.',
+  })
   @IsString()
-  @MinLength(8)
+  @MinLength(12)
   @MaxLength(64)
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/, {
+    message:
+      'password must include at least one lowercase letter, one uppercase letter, and one number',
+  })
   password: string;
 
   @ApiProperty({ example: 'Alex Dupont' })
@@ -42,4 +53,12 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+
+  @ApiProperty({
+    required: false,
+    description: 'Stable client device identifier',
+  })
+  @IsOptional()
+  @IsUUID()
+  deviceId?: string;
 }
