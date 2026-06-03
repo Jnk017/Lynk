@@ -22,11 +22,17 @@ export class S3Service {
         secretAccessKey: this.configService.get<string>('aws.secretAccessKey'),
       },
     });
-    this.bucket = this.configService.get<string>('aws.s3Bucket') || 'lynk-media';
-    this.cdnDomain = this.configService.get<string>('aws.cloudfrontDomain') || '';
+    this.bucket =
+      this.configService.get<string>('aws.s3Bucket') || 'lynk-media';
+    this.cdnDomain =
+      this.configService.get<string>('aws.cloudfrontDomain') || '';
   }
 
-  async uploadBuffer(buffer: Buffer, key: string, contentType: string): Promise<string> {
+  async uploadBuffer(
+    buffer: Buffer,
+    key: string,
+    contentType: string,
+  ): Promise<string> {
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: key,
@@ -46,7 +52,9 @@ export class S3Service {
 
   async getPresignedUrl(key: string, expiresInSeconds = 3600): Promise<string> {
     const command = new GetObjectCommand({ Bucket: this.bucket, Key: key });
-    return getSignedUrl(this.s3Client, command, { expiresIn: expiresInSeconds });
+    return getSignedUrl(this.s3Client, command, {
+      expiresIn: expiresInSeconds,
+    });
   }
 
   getPublicUrl(key: string): string {

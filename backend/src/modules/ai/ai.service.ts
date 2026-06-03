@@ -5,6 +5,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 
+interface IceBreakerResponse {
+  messages?: unknown;
+}
+
 @Injectable()
 export class AiService {
   private openai: OpenAI;
@@ -26,7 +30,7 @@ export class AiService {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) return '';
 
-    const tags = user.lifestyleTags?.map((t: Record<string, unknown>) => t['value']).join(', ') || '';
+    const tags = this.formatLifestyleTags(user.lifestyleTags);
     const prompt = `Generate a short, charming dating profile bio (max 150 words) in the user's style. 
       User details: name=${user.displayName}, tags=[${tags}].
       Make it warm, genuine, and show personality. No clichés.`;
@@ -43,16 +47,28 @@ export class AiService {
   /**
    * Generate ice breaker conversation starters personalized to both users.
    */
-  async generateIceBreakers(userId: string, targetUserId: string): Promise<string[]> {
+  async generateIceBreakers(
+    userId: string,
+    targetUserId: string,
+  ): Promise<string[]> {
     const [user, target] = await Promise.all([
-      this.userRepository.findOne({ where: { id: userId }, relations: ['prompts'] }),
-      this.userRepository.findOne({ where: { id: targetUserId }, relations: ['prompts'] }),
+      this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['prompts'],
+      }),
+      this.userRepository.findOne({
+        where: { id: targetUserId },
+        relations: ['prompts'],
+      }),
     ]);
 
     if (!user || !target) return this.getDefaultIceBreakers();
 
-    const userTags = user.lifestyleTags?.map((t: Record<string, unknown>) => t['value']).join(', ') || '';
-    const targetPrompts = target.prompts?.map((p) => `Q: ${p.question} A: ${p.textAnswer}`).join('\n') || '';
+    const userTags = this.formatLifestyleTags(user.lifestyleTags);
+    const targetPrompts =
+      target.prompts
+        ?.map((p) => `Q: ${p.question} A: ${p.textAnswer}`)
+        .join('\n') || '';
 
     const prompt = `Based on these two dating profiles, generate 3 creative and personalized ice-breaker messages 
     that the first person could send to the second.
@@ -71,8 +87,13 @@ export class AiService {
         max_tokens: 300,
       });
 
-      const parsed = JSON.parse(response.choices[0]?.message?.content || '{"messages":[]}');
-      return parsed.messages || this.getDefaultIceBreakers();
+      const parsed = JSON.parse(
+        response.choices[0]?.message?.content || '{"messages":[]}',
+      ) as IceBreakerResponse;
+      return Array.isArray(parsed.messages) &&
+        parsed.messages.every((message) => typeof message === 'string')
+        ? parsed.messages
+        : this.getDefaultIceBreakers();
     } catch {
       return this.getDefaultIceBreakers();
     }
@@ -94,23 +115,30 @@ export class AiService {
   /**
    * Suggest a prompt question for onboarding.
    */
-  async suggestPromptQuestions(): Promise<string[]> {
+  suggestPromptQuestions(): string[] {
     return [
-      'The most spontaneous thing I\'ve ever done is...',
+      "The most spontaneous thing I've ever done is...",
       'My go-to karaoke song is...',
       'The way to win me over is...',
-      'I\'m looking for someone who...',
+      "I'm looking for someone who...",
       'My ideal Sunday looks like...',
       'Controversial opinion: ...',
       'The story behind my last name is...',
     ];
   }
 
+  private formatLifestyleTags(tags: Record<string, unknown>[] = []): string {
+    return tags
+      .map((tag) => tag.value)
+      .filter((value): value is string => typeof value === 'string')
+      .join(', ');
+  }
+
   private getDefaultIceBreakers(): string[] {
     return [
-      "I noticed we both have great taste – want to compare notes? 😄",
+      'I noticed we both have great taste – want to compare notes? 😄',
       "Your profile made me smile. What's the story behind it?",
-      "If we were to grab a coffee right now, what would you order?",
+      'If we were to grab a coffee right now, what would you order?',
     ];
   }
 }

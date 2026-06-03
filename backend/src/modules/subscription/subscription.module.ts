@@ -5,9 +5,13 @@ import { SubscriptionService } from './subscription.service';
 import { SubscriptionPlan } from './entities/subscription-plan.entity';
 import { User } from '../user/entities/user.entity';
 import { Transaction } from '../payment/entities/transaction.entity';
+import { PaymentModule } from '../payment/payment.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([SubscriptionPlan, User, Transaction])],
+  imports: [
+    PaymentModule,
+    TypeOrmModule.forFeature([SubscriptionPlan, User, Transaction]),
+  ],
   controllers: [SubscriptionController],
   providers: [SubscriptionService],
   exports: [SubscriptionService],

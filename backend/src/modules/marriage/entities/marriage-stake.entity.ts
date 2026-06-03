@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { MarriageStakeStatus } from '../../../common/enums';
@@ -24,20 +25,25 @@ export class MarriageStake {
   user1Id: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_1_id' })
+  @JoinColumn({ name: 'user1Id' })
   user1: User;
 
   @Column()
   user2Id: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_2_id' })
+  @JoinColumn({ name: 'user2Id' })
   user2: User;
 
   @Column({ type: 'decimal', precision: 18, scale: 8 })
   amountPi: number;
 
-  @Column({ type: 'enum', enum: MarriageStakeStatus, default: MarriageStakeStatus.PENDING })
+  @Column({
+    type: 'enum',
+    enum: MarriageStakeStatus,
+    enumName: 'marriage_stake_status_enum',
+    default: MarriageStakeStatus.PENDING,
+  })
   status: MarriageStakeStatus;
 
   @Column({ nullable: true })
@@ -65,4 +71,7 @@ export class MarriageStake {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

@@ -27,7 +27,10 @@ export class UserController {
 
   @Patch('me')
   @ApiOperation({ summary: 'Update current user profile' })
-  updateMe(@Request() req: { user: { id: string } }, @Body() dto: UpdateProfileDto) {
+  updateMe(
+    @Request() req: { user: { id: string } },
+    @Body() dto: UpdateProfileDto,
+  ) {
     return this.userService.updateProfile(req.user.id, dto);
   }
 
