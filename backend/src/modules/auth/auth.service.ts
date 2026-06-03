@@ -307,12 +307,7 @@ export class AuthService {
     refreshTokenId: string;
   }> {
     const refreshTokenId = uuidv4();
-    const basePayload = {
-      sub: user.id,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-    };
+    const basePayload = { sub: user.id, email: user.email, phone: user.phone };
     const refreshPayload = {
       ...basePayload,
       jti: refreshTokenId,
@@ -416,7 +411,6 @@ export class AuthService {
       isFounder: user.isFounder,
       founderRank: user.founderRank,
       isRevenueSharingActive: user.isRevenueSharingActive,
-      role: user.role,
       verificationStatus: user.verificationStatus,
       trustScore: user.trustScore,
       subscriptionPlanId: user.subscriptionPlanId,
