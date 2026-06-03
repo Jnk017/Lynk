@@ -38,6 +38,12 @@ export class PaymentService {
     if (stripeKey) {
       this.stripe = new Stripe(stripeKey);
     }
+    this.providers = new Map<TransactionProvider, PaymentProvider>([
+      [TransactionProvider.PI_NETWORK, this.piPaymentProvider],
+      [TransactionProvider.MONEROO, this.monerooPaymentProvider],
+      [TransactionProvider.AVADAPAY, this.avadaPayPaymentProvider],
+      [TransactionProvider.COINBASE_COMMERCE, this.coinbaseCommerceProvider],
+    ]);
   }
 
   async createStripePaymentIntent(
@@ -115,6 +121,18 @@ export class PaymentService {
         externalRef: intent.id,
       });
     }
+
+    const log = await this.webhookLogRepository.save({
+      provider,
+      eventType: webhookResult.eventType,
+      externalRef: webhookResult.externalRef,
+      externalEventId,
+      headers,
+      payload: this.asRecord(payload),
+      processed: webhookResult.processed,
+    });
+
+    return { ...webhookResult, duplicate: false, logId: log.id };
   }
 
   /**

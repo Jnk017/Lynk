@@ -9,6 +9,8 @@ import {
   UseGuards,
   Request,
   Query,
+  Param,
+  ParseEnumPipe,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -19,7 +21,11 @@ import {
 } from '@nestjs/swagger';
 import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { PaymentService } from './payment.service';
-import { TransactionType } from '../../common/enums';
+import {
+  TransactionCurrency,
+  TransactionProvider,
+  TransactionType,
+} from '../../common/enums';
 
 class CreatePaymentIntentDto {
   @ApiProperty({ description: 'Amount in cents (USD)' })
