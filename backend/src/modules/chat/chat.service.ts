@@ -111,12 +111,6 @@ export class ChatService {
       isEphemeral,
     });
 
-    void this.observabilityService?.track(
-      ObservabilityEventName.MESSAGE_SENT,
-      senderId,
-      { chatRoomId, messageId: message.id, type },
-    );
-
     const preview =
       type === MessageType.TEXT ? content.substring(0, 60) : `[${type}]`;
     await this.chatRoomRepository.update(chatRoomId, {

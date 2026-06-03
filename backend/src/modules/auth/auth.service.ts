@@ -21,8 +21,6 @@ import { ReferralStatus } from '../../common/enums';
 import { FounderService } from '../founder/founder.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuthSessionContext } from './types/auth-session-context';
-import { ObservabilityService } from '../observability/observability.service';
-import { ObservabilityEventName } from '../observability/observability-events';
 
 interface JwtRefreshPayload {
   sub: string;
@@ -49,8 +47,6 @@ export class AuthService {
     private dataSource: DataSource,
     private founderService: FounderService,
     private auditLogService: AuditLogService,
-    @Optional()
-    private observabilityService?: ObservabilityService,
   ) {}
 
   async register(dto: RegisterDto, context: AuthSessionContext = {}) {
@@ -117,11 +113,6 @@ export class AuthService {
         ...context,
         deviceId: dto.deviceId || context.deviceId,
       });
-      void this.observabilityService?.track(
-        ObservabilityEventName.USER_REGISTERED,
-        savedUser.id,
-        { method: 'password', hasReferral: Boolean(referredBy) },
-      );
       return {
         user: this.sanitizeUser(savedUser),
         accessToken: tokens.accessToken,
@@ -196,11 +187,6 @@ export class AuthService {
         );
 
         await queryRunner.commitTransaction();
-        void this.observabilityService?.track(
-          ObservabilityEventName.USER_REGISTERED,
-          user.id,
-          { method: 'pi' },
-        );
       } catch (error) {
         await queryRunner.rollbackTransaction();
         throw error;
@@ -322,12 +308,7 @@ export class AuthService {
     refreshTokenId: string;
   }> {
     const refreshTokenId = uuidv4();
-    const basePayload = {
-      sub: user.id,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-    };
+    const basePayload = { sub: user.id, email: user.email, phone: user.phone };
     const refreshPayload = {
       ...basePayload,
       jti: refreshTokenId,
@@ -431,7 +412,6 @@ export class AuthService {
       isFounder: user.isFounder,
       founderRank: user.founderRank,
       isRevenueSharingActive: user.isRevenueSharingActive,
-      role: user.role,
       verificationStatus: user.verificationStatus,
       trustScore: user.trustScore,
       subscriptionPlanId: user.subscriptionPlanId,

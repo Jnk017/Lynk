@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -12,8 +11,6 @@ import { Transaction } from '../payment/entities/transaction.entity';
 import { SubscriptionTier, TransactionType } from '../../common/enums';
 import { SUBSCRIPTION_PRICES } from '../../common/constants';
 import { PaymentService } from '../payment/payment.service';
-import { ObservabilityService } from '../observability/observability.service';
-import { ObservabilityEventName } from '../observability/observability-events';
 
 @Injectable()
 export class SubscriptionService {
@@ -26,8 +23,6 @@ export class SubscriptionService {
     private transactionRepository: Repository<Transaction>,
     private dataSource: DataSource,
     private paymentService: PaymentService,
-    @Optional()
-    private observabilityService?: ObservabilityService,
   ) {}
 
   async getAllPlans(): Promise<SubscriptionPlan[]> {

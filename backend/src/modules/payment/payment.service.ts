@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -19,20 +18,10 @@ import {
   TransactionStatus,
 } from '../../common/enums';
 import { PiPaymentProvider } from './providers/pi-payment.provider';
-import {
-  PaymentProvider,
-  WebhookResult,
-} from './providers/payment-provider.interface';
-import { MonerooPaymentProviderStub } from './providers/moneroo-payment-provider.stub';
-import { AvadaPayPaymentProviderStub } from './providers/avadapay-payment-provider.stub';
-import { CoinbaseCommerceProviderStub } from './providers/coinbase-commerce-provider.stub';
-import { ObservabilityService } from '../observability/observability.service';
-import { ObservabilityEventName } from '../observability/observability-events';
 
 @Injectable()
 export class PaymentService {
   private stripe?: Stripe.Stripe;
-  private readonly providers: Map<TransactionProvider, PaymentProvider>;
 
   constructor(
     @InjectRepository(Transaction)
@@ -44,11 +33,6 @@ export class PaymentService {
     private configService: ConfigService,
     private dataSource: DataSource,
     private piPaymentProvider: PiPaymentProvider,
-    private monerooPaymentProvider: MonerooPaymentProviderStub,
-    private avadaPayPaymentProvider: AvadaPayPaymentProviderStub,
-    private coinbaseCommerceProvider: CoinbaseCommerceProviderStub,
-    @Optional()
-    private observabilityService?: ObservabilityService,
   ) {
     const stripeKey = this.configService.get<string>('stripe.secretKey');
     if (stripeKey) {
@@ -76,7 +60,7 @@ export class PaymentService {
       metadata: { userId, type },
     });
 
-    const transaction = await this.transactionRepository.save({
+    await this.transactionRepository.save({
       userId,
       type,
       currency: TransactionCurrency.USD,
@@ -86,60 +70,10 @@ export class PaymentService {
       externalRef: paymentIntent.id,
     });
 
-    void this.observabilityService?.track(
-      ObservabilityEventName.PAYMENT_CREATED,
-      userId,
-      {
-        transactionId: transaction.id,
-        provider: TransactionProvider.STRIPE,
-        amount: amountCents / 100,
-        currency,
-        type,
-      },
-    );
-
     return {
       clientSecret: paymentIntent.client_secret,
       intentId: paymentIntent.id,
     };
-  }
-
-  async createProviderPayment(
-    userId: string,
-    provider: TransactionProvider,
-    amount: number,
-    currency: TransactionCurrency,
-    type: TransactionType,
-    metadata: Record<string, unknown> = {},
-  ) {
-    this.assertValidAmount(amount);
-    const paymentProvider = this.getPaymentProvider(provider);
-    const result = await paymentProvider.createPayment({
-      userId,
-      amount,
-      currency,
-      type,
-      metadata,
-    });
-
-    const transaction = await this.transactionRepository.save({
-      userId,
-      type,
-      currency,
-      amount,
-      provider,
-      status: TransactionStatus.PENDING,
-      externalRef: result.externalRef,
-      metadata: { ...(result.metadata || {}), checkoutUrl: result.checkoutUrl },
-    });
-
-    void this.observabilityService?.track(
-      ObservabilityEventName.PAYMENT_CREATED,
-      userId,
-      { transactionId: transaction.id, provider, amount, currency, type },
-    );
-
-    return { ...result, transactionId: transaction.id };
   }
 
   async handleStripeWebhook(rawBody: Buffer, signature: string): Promise<void> {
@@ -156,14 +90,6 @@ export class PaymentService {
       signature,
       webhookSecret,
     );
-
-    const duplicate = await this.webhookLogRepository.findOne({
-      where: {
-        provider: TransactionProvider.STRIPE,
-        externalEventId: event.id,
-      },
-    });
-    if (duplicate) return;
 
     const log = await this.webhookLogRepository.save({
       provider: TransactionProvider.STRIPE,
@@ -195,6 +121,18 @@ export class PaymentService {
         externalRef: intent.id,
       });
     }
+
+    const log = await this.webhookLogRepository.save({
+      provider,
+      eventType: webhookResult.eventType,
+      externalRef: webhookResult.externalRef,
+      externalEventId,
+      headers,
+      payload: this.asRecord(payload),
+      processed: webhookResult.processed,
+    });
+
+    return { ...webhookResult, duplicate: false, logId: log.id };
   }
 
   async handleProviderWebhook(
@@ -280,19 +218,6 @@ export class PaymentService {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.query(
-        `SELECT pg_advisory_xact_lock(hashtext('lynk_payment_external_ref_' || $1))`,
-        [piPaymentId],
-      );
-
-      const existingInTransaction = await queryRunner.manager.findOne(
-        Transaction,
-        { where: { externalRef: piPaymentId } },
-      );
-      if (existingInTransaction) {
-        throw new BadRequestException('Transaction already processed');
-      }
-
       await queryRunner.manager.increment(
         User,
         { id: userId },
@@ -359,35 +284,6 @@ export class PaymentService {
     await this.transactionRepository.update(transactionId, {
       metadata: { ...(transaction.metadata || {}), ...metadata },
     });
-  }
-
-  private getPaymentProvider(provider: TransactionProvider): PaymentProvider {
-    const paymentProvider = this.providers.get(provider);
-    if (!paymentProvider) {
-      throw new BadRequestException(
-        `Payment provider ${provider} is not supported`,
-      );
-    }
-    return paymentProvider;
-  }
-
-  private assertValidAmount(amount: number): void {
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new BadRequestException('Payment amount must be greater than zero');
-    }
-  }
-
-  private extractWebhookEventId(payload: unknown): string | undefined {
-    if (!payload || typeof payload !== 'object') return undefined;
-    const data = payload as Record<string, unknown>;
-    const id = data.eventId || data.id;
-    return typeof id === 'string' ? id : undefined;
-  }
-
-  private asRecord(payload: unknown): Record<string, unknown> {
-    return payload && typeof payload === 'object'
-      ? (payload as Record<string, unknown>)
-      : { value: payload };
   }
 
   async getUserTransactions(

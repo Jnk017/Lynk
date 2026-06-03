@@ -11,7 +11,6 @@ import { SubscriptionService } from './modules/subscription/subscription.service
 import { GiftService } from './modules/gift/gift.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { requestIdMiddleware } from './common/middleware/request-id.middleware';
-import { ObservabilityService } from './modules/observability/observability.service';
 
 async function bootstrap() {
   validateProductionEnv();
@@ -44,7 +43,7 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new HttpExceptionFilter(app.get(ObservabilityService)));
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   app.setGlobalPrefix('api/v1');
 

@@ -89,7 +89,6 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Logout current device by revoking refresh token' })
   logout(@Body() dto: LogoutDto) {
     return this.authService.logout(dto.refreshToken);
