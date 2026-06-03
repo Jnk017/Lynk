@@ -8,6 +8,7 @@ import { Transaction } from '../payment/entities/transaction.entity';
 import {
   RevenuePoolStatus,
   RevenueDistributionStatus,
+  ReferralStatus,
 } from '../../common/enums';
 import { SystemSettingsService } from '../system-settings/system-settings.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -408,5 +409,64 @@ describe('ReferralService revenue sharing idempotency', () => {
     );
     expect(queryRunner.rollbackTransaction).toHaveBeenCalledTimes(1);
     expect(queryRunner.commitTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('ReferralService referral reward safety', () => {
+  it('marks a referral verified and increments the referrer only once', async () => {
+    const referralLog = {
+      id: 'referral-1',
+      referrerId: 'founder-1',
+      refereeId: 'user-1',
+      verificationPassed: false,
+      countsForRevenueSharing: false,
+      status: ReferralStatus.REGISTERED,
+    } as ReferralLog;
+    const referrer = {
+      id: 'founder-1',
+      isFounder: true,
+      isRevenueSharingActive: false,
+      successfulReferralsCount: 0,
+    } as User;
+    const referralLogRepository = {
+      find: jest.fn(),
+      findOne: jest
+        .fn<Promise<ReferralLog | null>, [unknown]>()
+        .mockResolvedValue(referralLog),
+      save: jest
+        .fn<Promise<ReferralLog>, [ReferralLog]>()
+        .mockResolvedValue(referralLog),
+    };
+    const userRepository = {
+      findOne: jest
+        .fn<Promise<User | null>, [unknown]>()
+        .mockResolvedValue(referrer),
+      increment: jest
+        .fn<Promise<unknown>, [unknown, string, number]>()
+        .mockResolvedValue({ affected: 1 }),
+      update: jest
+        .fn<Promise<unknown>, [unknown, unknown]>()
+        .mockResolvedValue({ affected: 1 }),
+    };
+    const service = new ReferralService(
+      userRepository as unknown as Repository<User>,
+      referralLogRepository as unknown as Repository<ReferralLog>,
+      {} as Repository<RevenuePool>,
+      {} as Repository<RevenueDistribution>,
+      {} as DataSource,
+      { getNumber: jest.fn() } as unknown as SystemSettingsService,
+      { record: jest.fn() } as unknown as AuditLogService,
+    );
+
+    await service.onUserVerified('user-1');
+    await service.onUserVerified('user-1');
+
+    expect(referralLogRepository.save).toHaveBeenCalledTimes(1);
+    expect(userRepository.increment).toHaveBeenCalledTimes(1);
+    expect(referralLog).toMatchObject({
+      verificationPassed: true,
+      countsForRevenueSharing: true,
+      status: ReferralStatus.VERIFIED,
+    });
   });
 });

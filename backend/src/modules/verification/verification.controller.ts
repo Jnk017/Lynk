@@ -69,7 +69,6 @@ export class VerificationController {
     )
     file: Express.Multer.File,
   ) {
-    if (!file) throw new BadRequestException('Document file is required');
     await this.verificationService.submitKyc(
       req.user.id,
       file.buffer,

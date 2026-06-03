@@ -175,3 +175,67 @@ describe('Payment provider stubs', () => {
     expect(webhookLogRepository.save).not.toHaveBeenCalled();
   });
 });
+
+describe('Payment transaction consumption safety', () => {
+  it('returns a completed transaction that belongs to the user and type', async () => {
+    const { service, transactionRepository } = createPaymentService();
+    transactionRepository.findOne.mockResolvedValueOnce({
+      id: 'tx-1',
+      userId: 'user-1',
+      type: TransactionType.SUBSCRIPTION,
+      status: TransactionStatus.COMPLETED,
+      metadata: {},
+    } as unknown as Transaction);
+
+    const transaction = await service.getCompletedTransactionForUse(
+      'user-1',
+      'tx-1',
+      TransactionType.SUBSCRIPTION,
+    );
+
+    expect(transaction.id).toBe('tx-1');
+    expect(transactionRepository.findOne).toHaveBeenCalledWith({
+      where: {
+        id: 'tx-1',
+        userId: 'user-1',
+        type: TransactionType.SUBSCRIPTION,
+        status: TransactionStatus.COMPLETED,
+      },
+    });
+  });
+
+  it('rejects already-consumed subscription transactions', async () => {
+    const { service, transactionRepository } = createPaymentService();
+    transactionRepository.findOne.mockResolvedValueOnce({
+      id: 'tx-1',
+      metadata: { subscriptionActivatedAt: '2026-06-03T00:00:00.000Z' },
+    } as unknown as Transaction);
+
+    await expect(
+      service.getCompletedTransactionForUse(
+        'user-1',
+        'tx-1',
+        TransactionType.SUBSCRIPTION,
+      ),
+    ).rejects.toThrow('already been consumed');
+  });
+
+  it('merges consumption metadata without dropping existing metadata', async () => {
+    const { service, transactionRepository } = createPaymentService();
+    transactionRepository.findOne.mockResolvedValueOnce({
+      id: 'tx-1',
+      metadata: { providerRef: 'pi-1' },
+    } as unknown as Transaction);
+
+    await service.markTransactionConsumed('tx-1', {
+      subscriptionActivatedAt: '2026-06-03T00:00:00.000Z',
+    });
+
+    expect(transactionRepository.update).toHaveBeenCalledWith('tx-1', {
+      metadata: {
+        providerRef: 'pi-1',
+        subscriptionActivatedAt: '2026-06-03T00:00:00.000Z',
+      },
+    });
+  });
+});

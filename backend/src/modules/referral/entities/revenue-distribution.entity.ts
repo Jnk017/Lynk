@@ -15,6 +15,8 @@ import { RevenuePool } from './revenue-pool.entity';
 
 @Entity('revenue_distributions')
 @Index(['month'])
+@Index(['poolId', 'founderId'], { unique: true })
+@Index(['month', 'founderId'], { unique: true })
 export class RevenueDistribution {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -18,7 +18,7 @@ import { ReferralLog } from '../referral/entities/referral-log.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { FounderService } from '../founder/founder.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { Gender, VerificationStatus } from '../../common/enums';
+import { Gender, UserRole, VerificationStatus } from '../../common/enums';
 
 interface RepositoryMock<T extends object> {
   findOne: jest.Mock<Promise<T | null>, [unknown]>;
@@ -69,6 +69,7 @@ describe('AuthService refresh token rotation', () => {
       successfulReferralsCount: 0,
       isFounder: false,
       founderRank: null,
+      role: UserRole.USER,
       isRevenueSharingActive: false,
       revenueSharingJoinedAt: null,
       displayName: 'Alex',
