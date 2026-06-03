@@ -27,8 +27,11 @@ export class ChatController {
 
   @Post('rooms/match/:matchId')
   @ApiOperation({ summary: 'Get or create chat room for a match' })
-  getOrCreateRoom(@Param('matchId') matchId: string) {
-    return this.chatService.getOrCreateRoomForMatch(matchId);
+  getOrCreateRoom(
+    @Request() req: { user: { id: string } },
+    @Param('matchId') matchId: string,
+  ) {
+    return this.chatService.getOrCreateRoomForMatch(req.user.id, matchId);
   }
 
   @Get('rooms/:roomId/messages')
@@ -39,7 +42,12 @@ export class ChatController {
     @Query('page') page = 1,
     @Query('limit') limit = 50,
   ) {
-    return this.chatService.getMessages(req.user.id, roomId, Number(page), Number(limit));
+    return this.chatService.getMessages(
+      req.user.id,
+      roomId,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Get('ice-breakers/:targetUserId')

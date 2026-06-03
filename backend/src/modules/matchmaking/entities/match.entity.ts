@@ -5,6 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
   Index,
 } from 'typeorm';
@@ -21,7 +22,7 @@ export class Match {
   initiatorId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'initiator_id' })
+  @JoinColumn({ name: 'initiatorId' })
   initiator: User;
 
   @Column()
@@ -29,10 +30,15 @@ export class Match {
   receiverId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'receiver_id' })
+  @JoinColumn({ name: 'receiverId' })
   receiver: User;
 
-  @Column({ type: 'enum', enum: MatchStatus, default: MatchStatus.MATCHED })
+  @Column({
+    type: 'enum',
+    enum: MatchStatus,
+    enumName: 'match_status_enum',
+    default: MatchStatus.MATCHED,
+  })
   status: MatchStatus;
 
   /**
@@ -56,4 +62,7 @@ export class Match {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }
