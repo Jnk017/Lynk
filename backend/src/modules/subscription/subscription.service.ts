@@ -100,6 +100,11 @@ export class SubscriptionService {
       if (!user) throw new NotFoundException('User not found');
 
       await queryRunner.commitTransaction();
+      void this.observabilityService?.track(
+        ObservabilityEventName.SUBSCRIPTION_STARTED,
+        userId,
+        { tier, paymentTransactionId },
+      );
       return user;
     } catch (error) {
       await queryRunner.rollbackTransaction();

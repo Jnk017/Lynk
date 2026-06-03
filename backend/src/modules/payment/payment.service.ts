@@ -135,6 +135,38 @@ export class PaymentService {
     return { ...webhookResult, duplicate: false, logId: log.id };
   }
 
+  async handleProviderWebhook(
+    provider: TransactionProvider,
+    payload: unknown,
+    headers: Record<string, string>,
+  ): Promise<WebhookResult & { duplicate: boolean; logId?: string }> {
+    const paymentProvider = this.getPaymentProvider(provider);
+    const webhookResult = await paymentProvider.handleWebhook(payload, headers);
+    const externalEventId =
+      webhookResult.externalEventId || this.extractWebhookEventId(payload);
+
+    if (externalEventId) {
+      const duplicate = await this.webhookLogRepository.findOne({
+        where: { provider, externalEventId },
+      });
+      if (duplicate) {
+        return { ...webhookResult, duplicate: true, logId: duplicate.id };
+      }
+    }
+
+    const log = await this.webhookLogRepository.save({
+      provider,
+      eventType: webhookResult.eventType,
+      externalRef: webhookResult.externalRef,
+      externalEventId,
+      headers,
+      payload: this.asRecord(payload),
+      processed: webhookResult.processed,
+    });
+
+    return { ...webhookResult, duplicate: false, logId: log.id };
+  }
+
   /**
    * Credits a Pi payment only after server-side verification with the Pi API.
    * The client never supplies the amount that will be credited.

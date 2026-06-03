@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Optional,
   ForbiddenException,
   NotFoundException,
   BadRequestException,
@@ -13,6 +14,8 @@ import { Match } from '../matchmaking/entities/match.entity';
 import { AiService } from '../ai/ai.service';
 import { NotificationService } from '../notification/notification.service';
 import { MessageType, NotificationType } from '../../common/enums';
+import { ObservabilityService } from '../observability/observability.service';
+import { ObservabilityEventName } from '../observability/observability-events';
 
 @Injectable()
 export class ChatService {
@@ -27,6 +30,8 @@ export class ChatService {
     private matchRepository: Repository<Match>,
     private aiService: AiService,
     private notificationService: NotificationService,
+    @Optional()
+    private observabilityService?: ObservabilityService,
   ) {}
 
   async getOrCreateRoomForMatch(
