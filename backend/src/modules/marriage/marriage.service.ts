@@ -10,7 +10,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { MarriageStake } from './entities/marriage-stake.entity';
 import { User } from '../user/entities/user.entity';
 import { MarriageStakeStatus } from '../../common/enums';
-import { MARRIAGE_STAKE_AMOUNT_USD } from '../../common/constants';
 
 const LOYALTY_BONUS_PERCENTAGE = 0.1; // 10% bonus on release
 
@@ -28,16 +27,28 @@ export class MarriageService {
    * Initiate a marriage stake between two matched users.
    * Both must have Gold or Platinum subscription with hasMarriageStaking = true.
    */
-  async initiateStake(user1Id: string, user2Id: string, amountPi: number): Promise<MarriageStake> {
+  async initiateStake(
+    user1Id: string,
+    user2Id: string,
+    amountPi: number,
+  ): Promise<MarriageStake> {
     const [user1, user2] = await Promise.all([
-      this.userRepository.findOne({ where: { id: user1Id }, relations: ['subscriptionPlan'] }),
-      this.userRepository.findOne({ where: { id: user2Id }, relations: ['subscriptionPlan'] }),
+      this.userRepository.findOne({
+        where: { id: user1Id },
+        relations: ['subscriptionPlan'],
+      }),
+      this.userRepository.findOne({
+        where: { id: user2Id },
+        relations: ['subscriptionPlan'],
+      }),
     ]);
 
     if (!user1 || !user2) throw new NotFoundException('User not found');
 
     if (!user1.subscriptionPlan?.hasMarriageStaking) {
-      throw new ForbiddenException('Marriage Staking requires Gold or Platinum subscription');
+      throw new ForbiddenException(
+        'Marriage Staking requires Gold or Platinum subscription',
+      );
     }
 
     if (user1.piBalance < amountPi / 2) {
@@ -65,7 +76,9 @@ export class MarriageService {
     marriageProofUrl: string,
     marriagePhotoUrl: string,
   ): Promise<MarriageStake> {
-    const stake = await this.marriageRepository.findOne({ where: { id: stakeId } });
+    const stake = await this.marriageRepository.findOne({
+      where: { id: stakeId },
+    });
     if (!stake) throw new NotFoundException('Marriage stake not found');
 
     if (stake.user1Id !== userId && stake.user2Id !== userId) {
@@ -87,7 +100,9 @@ export class MarriageService {
    * Applies a 10% loyalty bonus on top of the staked amount.
    */
   async releaseStake(stakeId: string): Promise<MarriageStake> {
-    const stake = await this.marriageRepository.findOne({ where: { id: stakeId } });
+    const stake = await this.marriageRepository.findOne({
+      where: { id: stakeId },
+    });
     if (!stake) throw new NotFoundException('Marriage stake not found');
     if (stake.status !== MarriageStakeStatus.PROOF_SUBMITTED) {
       throw new BadRequestException('Stake proof has not been submitted');
@@ -102,8 +117,18 @@ export class MarriageService {
       const totalReturn = Number(stake.amountPi) + loyaltyBonus;
       const perUser = totalReturn / 2;
 
-      await queryRunner.manager.increment(User, { id: stake.user1Id }, 'piBalance', perUser);
-      await queryRunner.manager.increment(User, { id: stake.user2Id }, 'piBalance', perUser);
+      await queryRunner.manager.increment(
+        User,
+        { id: stake.user1Id },
+        'piBalance',
+        perUser,
+      );
+      await queryRunner.manager.increment(
+        User,
+        { id: stake.user2Id },
+        'piBalance',
+        perUser,
+      );
 
       stake.status = MarriageStakeStatus.RELEASED;
       stake.verifiedAt = new Date();

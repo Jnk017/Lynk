@@ -5,6 +5,8 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { MediaType } from '../../../common/enums';
 import { User } from '../../user/entities/user.entity';
@@ -18,10 +20,10 @@ export class ProfileMedia {
   userId: string;
 
   @ManyToOne(() => User, (user) => user.media, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column({ type: 'enum', enum: MediaType })
+  @Column({ type: 'enum', enum: MediaType, enumName: 'media_type_enum' })
   type: MediaType;
 
   @Column()
@@ -44,4 +46,10 @@ export class ProfileMedia {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProfileMedia } from './entities/profile-media.entity';
@@ -27,7 +31,9 @@ export class ProfileService {
     file: Express.Multer.File,
     type: MediaType,
   ): Promise<ProfileMedia> {
-    const existing = await this.mediaRepository.find({ where: { userId, type, isActive: true } });
+    const existing = await this.mediaRepository.find({
+      where: { userId, type, isActive: true },
+    });
     const limit = type === MediaType.PHOTO ? MAX_PHOTOS : MAX_VIDEOS;
 
     if (existing.length >= limit) {
@@ -36,7 +42,11 @@ export class ProfileService {
 
     const ext = file.originalname.split('.').pop();
     const key = `profiles/${userId}/${type}s/${Date.now()}.${ext}`;
-    const url = await this.s3Service.uploadBuffer(file.buffer, key, file.mimetype);
+    const url = await this.s3Service.uploadBuffer(
+      file.buffer,
+      key,
+      file.mimetype,
+    );
 
     return this.mediaRepository.save({
       userId,
@@ -47,7 +57,9 @@ export class ProfileService {
   }
 
   async deleteMedia(userId: string, mediaId: string): Promise<void> {
-    const media = await this.mediaRepository.findOne({ where: { id: mediaId, userId } });
+    const media = await this.mediaRepository.findOne({
+      where: { id: mediaId, userId },
+    });
     if (!media) throw new NotFoundException('Media not found');
 
     const key = this.s3Service.extractKeyFromUrl(media.url);
@@ -57,7 +69,10 @@ export class ProfileService {
 
   async reorderMedia(userId: string, orderedIds: string[]): Promise<void> {
     for (let i = 0; i < orderedIds.length; i++) {
-      await this.mediaRepository.update({ id: orderedIds[i], userId }, { orderIndex: i });
+      await this.mediaRepository.update(
+        { id: orderedIds[i], userId },
+        { orderIndex: i },
+      );
     }
   }
 
@@ -76,7 +91,11 @@ export class ProfileService {
     let audioUrl: string | undefined;
     if (audioBuffer) {
       const key = `profiles/${userId}/prompts/${Date.now()}.m4a`;
-      audioUrl = await this.s3Service.uploadBuffer(audioBuffer, key, audioMimeType || 'audio/m4a');
+      audioUrl = await this.s3Service.uploadBuffer(
+        audioBuffer,
+        key,
+        audioMimeType || 'audio/m4a',
+      );
     }
 
     return this.promptRepository.save({
@@ -89,12 +108,14 @@ export class ProfileService {
   }
 
   async deletePrompt(userId: string, promptId: string): Promise<void> {
-    const prompt = await this.promptRepository.findOne({ where: { id: promptId, userId } });
+    const prompt = await this.promptRepository.findOne({
+      where: { id: promptId, userId },
+    });
     if (!prompt) throw new NotFoundException('Prompt not found');
     await this.promptRepository.remove(prompt);
   }
 
-  async getSuggestedPrompts(): Promise<string[]> {
+  getSuggestedPrompts(): string[] {
     return this.aiService.suggestPromptQuestions();
   }
 
