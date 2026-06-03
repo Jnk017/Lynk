@@ -25,7 +25,6 @@ Make Lynk automatically validate backend and frontend changes in GitHub Actions,
 - Added npm cache configuration for both backend and frontend jobs.
 - Added a frontend `lint` script so CI has a stable command. For now it delegates to TypeScript validation because the frontend does not yet have a dedicated ESLint configuration.
 - Added a frontend `doctor` script for local Expo checks.
-- Added the missing `@react-native-masked-view/masked-view` dependency used by `GradientText`; Expo SDK 55 bundles version `0.3.2`.
 
 ## Local validation
 
