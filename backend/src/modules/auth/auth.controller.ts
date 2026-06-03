@@ -59,6 +59,7 @@ export class AuthController {
 
   @Post('pi')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @ApiOperation({ summary: 'Authenticate with Pi Network wallet' })
   loginWithPi(
     @Body() dto: PiAuthDto,
@@ -73,6 +74,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
   refresh(
     @Body() dto: RefreshTokenDto,

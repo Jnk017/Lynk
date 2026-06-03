@@ -5,7 +5,9 @@ import {
   Request,
   UploadedFile,
   UseInterceptors,
-  BadRequestException,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -32,9 +34,16 @@ export class VerificationController {
   @ApiOperation({ summary: 'Submit selfie frame for AI liveness detection' })
   async verifyLiveness(
     @Request() req: { user: { id: string } },
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^image\/(jpeg|png|webp)$/ }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
   ) {
-    if (!file) throw new BadRequestException('Image file is required');
     return this.verificationService.verifyLiveness(req.user.id, file.buffer);
   }
 
@@ -48,7 +57,17 @@ export class VerificationController {
   })
   async submitKyc(
     @Request() req: { user: { id: string } },
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+          new FileTypeValidator({
+            fileType: /^(application\/pdf|image\/(jpeg|png|webp))$/,
+          }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('Document file is required');
     await this.verificationService.submitKyc(
