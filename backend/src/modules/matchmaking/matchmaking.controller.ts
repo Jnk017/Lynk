@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
-import { IsEnum, IsUUID } from 'class-validator';
+import { IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { MatchmakingService } from './matchmaking.service';
 import { SwipeAction } from '../../common/enums';
@@ -46,7 +46,11 @@ export class MatchmakingController {
     @Query('page') page = 1,
     @Query('limit') limit = 10,
   ) {
-    return this.matchmakingService.getDiscoveryFeed(req.user.id, Number(page), Number(limit));
+    return this.matchmakingService.getDiscoveryFeed(
+      req.user.id,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Post('ai-session')
@@ -62,7 +66,11 @@ export class MatchmakingController {
     @Param('sessionId') sessionId: string,
     @Param('profileId') profileId: string,
   ) {
-    return this.matchmakingService.dropSessionProfile(req.user.id, sessionId, profileId);
+    return this.matchmakingService.dropSessionProfile(
+      req.user.id,
+      sessionId,
+      profileId,
+    );
   }
 
   @Post('ai-session/:sessionId/choose/:profileId')
@@ -72,6 +80,10 @@ export class MatchmakingController {
     @Param('sessionId') sessionId: string,
     @Param('profileId') profileId: string,
   ) {
-    return this.matchmakingService.makeFinalChoice(req.user.id, sessionId, profileId);
+    return this.matchmakingService.makeFinalChoice(
+      req.user.id,
+      sessionId,
+      profileId,
+    );
   }
 }

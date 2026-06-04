@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
+import { UserRole } from '../../../common/enums';
 
 export interface JwtPayload {
   sub: string;
@@ -12,6 +13,7 @@ export interface JwtPayload {
   phone?: string;
   iat?: number;
   exp?: number;
+  role?: UserRole;
 }
 
 @Injectable()
@@ -29,7 +31,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: JwtPayload): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+    const user = await this.userRepository.findOne({
+      where: { id: payload.sub },
+    });
     if (!user || user.isBanned) {
       throw new UnauthorizedException('Account not found or suspended');
     }

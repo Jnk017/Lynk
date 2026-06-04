@@ -5,6 +5,8 @@ import {
   ManyToOne,
   JoinColumn,
   CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { ChatRoom } from './chat-room.entity';
@@ -18,14 +20,16 @@ export class ChatParticipant {
   userId: string;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @Column()
   chatRoomId: string;
 
-  @ManyToOne(() => ChatRoom, (room) => room.participants, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'chat_room_id' })
+  @ManyToOne(() => ChatRoom, (room) => room.participants, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'chatRoomId' })
   chatRoom: ChatRoom;
 
   @Column({ nullable: true })
@@ -36,4 +40,10 @@ export class ChatParticipant {
 
   @CreateDateColumn()
   joinedAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

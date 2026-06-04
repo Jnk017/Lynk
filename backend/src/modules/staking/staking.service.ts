@@ -11,7 +11,6 @@ import { User } from '../user/entities/user.entity';
 import { StakingContractStatus } from '../../common/enums';
 
 const DATE_CONFIRMATION_WINDOW_HOURS = 2;
-const GEOLOCATION_RADIUS_KM = 0.5;
 
 @Injectable()
 export class StakingService {
@@ -51,7 +50,12 @@ export class StakingService {
 
     try {
       // Lock Pi from both users
-      await queryRunner.manager.decrement(User, { id: creatorId }, 'piBalance', stakeAmountPiEach);
+      await queryRunner.manager.decrement(
+        User,
+        { id: creatorId },
+        'piBalance',
+        stakeAmountPiEach,
+      );
 
       const contract = await queryRunner.manager.save(StakingContract, {
         creatorId,
@@ -80,10 +84,15 @@ export class StakingService {
   async confirmAttendance(
     userId: string,
     contractId: string,
-    lat: number,
-    lng: number,
+    _lat: number,
+    _lng: number,
   ): Promise<{ status: string; message: string }> {
-    const contract = await this.stakingRepository.findOne({ where: { id: contractId } });
+    void _lat;
+    void _lng;
+
+    const contract = await this.stakingRepository.findOne({
+      where: { id: contractId },
+    });
     if (!contract) throw new NotFoundException('Staking contract not found');
     if (contract.status !== StakingContractStatus.ACTIVE) {
       throw new BadRequestException('Contract is no longer active');
@@ -96,9 +105,12 @@ export class StakingService {
     const now = new Date();
 
     // Check if confirmation window is open (within 2 hours of date)
-    const windowStart = new Date(contract.dateScheduledAt.getTime() - 60 * 60 * 1000);
+    const windowStart = new Date(
+      contract.dateScheduledAt.getTime() - 60 * 60 * 1000,
+    );
     const windowEnd = new Date(
-      contract.dateScheduledAt.getTime() + DATE_CONFIRMATION_WINDOW_HOURS * 60 * 60 * 1000,
+      contract.dateScheduledAt.getTime() +
+        DATE_CONFIRMATION_WINDOW_HOURS * 60 * 60 * 1000,
     );
 
     if (now < windowStart || now > windowEnd) {
@@ -116,11 +128,17 @@ export class StakingService {
     if (contract.creatorConfirmed && contract.partnerConfirmed) {
       // Both confirmed: return stakes to both parties
       await this.resolveContract(contract, 'both');
-      return { status: 'resolved', message: 'Both parties confirmed. Stakes returned! 🎉' };
+      return {
+        status: 'resolved',
+        message: 'Both parties confirmed. Stakes returned! 🎉',
+      };
     }
 
     await this.stakingRepository.save(contract);
-    return { status: 'pending', message: 'Attendance confirmed. Waiting for the other party.' };
+    return {
+      status: 'pending',
+      message: 'Attendance confirmed. Waiting for the other party.',
+    };
   }
 
   /**
@@ -139,7 +157,8 @@ export class StakingService {
       .getMany();
 
     for (const contract of expiredContracts) {
-      const bothGhosted = !contract.creatorConfirmed && !contract.partnerConfirmed;
+      const bothGhosted =
+        !contract.creatorConfirmed && !contract.partnerConfirmed;
 
       if (bothGhosted) {
         // No one showed up; return both stakes to their owners
@@ -168,17 +187,37 @@ export class StakingService {
       const totalStake = contract.stakeAmountPiEach * 2;
 
       if (resolution === 'both' || resolution === 'cancelled') {
-        await queryRunner.manager.increment(User, { id: contract.creatorId }, 'piBalance', contract.stakeAmountPiEach);
-        await queryRunner.manager.increment(User, { id: contract.partnerId }, 'piBalance', contract.stakeAmountPiEach);
+        await queryRunner.manager.increment(
+          User,
+          { id: contract.creatorId },
+          'piBalance',
+          contract.stakeAmountPiEach,
+        );
+        await queryRunner.manager.increment(
+          User,
+          { id: contract.partnerId },
+          'piBalance',
+          contract.stakeAmountPiEach,
+        );
         contract.status =
           resolution === 'both'
             ? StakingContractStatus.RESOLVED_BOTH
             : StakingContractStatus.CANCELLED;
       } else if (resolution === 'victim_creator') {
-        await queryRunner.manager.increment(User, { id: contract.creatorId }, 'piBalance', totalStake);
+        await queryRunner.manager.increment(
+          User,
+          { id: contract.creatorId },
+          'piBalance',
+          totalStake,
+        );
         contract.status = StakingContractStatus.RESOLVED_VICTIM;
       } else {
-        await queryRunner.manager.increment(User, { id: contract.partnerId }, 'piBalance', totalStake);
+        await queryRunner.manager.increment(
+          User,
+          { id: contract.partnerId },
+          'piBalance',
+          totalStake,
+        );
         contract.status = StakingContractStatus.RESOLVED_VICTIM;
       }
 
