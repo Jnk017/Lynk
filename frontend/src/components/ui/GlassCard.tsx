@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, ViewStyle, StyleSheet } from 'react-native';
+import { View, StyleProp, ViewStyle, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { COLORS, BORDER_RADIUS } from '../../constants/theme';
 
 interface GlassCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   intensity?: number;
   borderColor?: string;
   padding?: number;
