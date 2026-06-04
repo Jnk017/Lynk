@@ -1,103 +1,186 @@
-# LYNK — Premium Web3 Dating Platform
+# LYNK – Premium Web3 Dating Application
 
-LYNK is a premium dating and relationship platform for the global African diaspora, designed around verified profiles, intentional matching, real-time chat, Pi-powered commitment features, founder rewards, and production-grade security foundations.
+> **Connect. Grow. Create.**  
+> The first Web3 premium dating experience built for the global African diaspora.
 
-> **Connect. Grow. Create.**
+---
 
-## Product vision
+## 🗺️ Project Overview
 
-LYNK treats dating as the entry point into a broader social discovery platform:
+Lynk fuses the best of Tinder (swipe), Bumble (first-message rules), Hinge (audio/video prompts), TikTok (discovery feed), and Badoo (lifestyle tags) — layered over a powerful **Pi Network Web3 economy** and an exclusive **Founder Revenue Sharing programme**.
 
-```text
-Dating → Social Discovery → Communities → Events → Pi Economy → African Social Super App
-```
+---
 
-The current repository contains a NestJS backend and Expo React Native frontend. The recent production-hardening work focused on making the existing foundations safer before adding additional marketplace/community/event features.
-
-## Current production-hardening status
-
-Implemented foundations include:
-
-- strict backend environment validation with no JWT secret fallbacks;
-- TypeORM migrations-first posture with `DB_SYNCHRONIZE=false` by default;
-- persisted, hashed refresh-token rotation with revocation and reuse detection;
-- RBAC/admin endpoints with audit logs;
-- payment provider abstraction with secure stubs for providers not integrated yet;
-- server-side Pi payment verification path;
-- idempotent webhook logging;
-- Founder allocation protected by PostgreSQL advisory locks;
-- revenue-sharing dry-run/idempotency foundations;
-- request correlation IDs and production-safe error responses;
-- backend healthcheck and observability hooks;
-- GitHub Actions CI for backend and frontend validation.
-
-See [`PRODUCTION_READINESS_REPORT.md`](./PRODUCTION_READINESS_REPORT.md) for the current score, remaining risks, and launch checklist.
-
-## Simplified domain model
+## 🧬 Simplified Database Schema
 
 ```mermaid
 erDiagram
-  User ||--|| UserProfile : owns
-  User ||--o{ UserMedia : uploads
-  User ||--o{ Swipe : performs
-  User ||--o{ Match : participates
-  Match ||--|| Conversation : opens
-  Conversation ||--o{ Message : contains
+    USER ||--o{ SWIPE_ACTION : "effectue"
+    USER ||--o{ MATCH : "initie/recoit"
+    USER ||--o{ PROFILE_MEDIA : "possede"
+    USER ||--o{ USER_PROMPT : "repond"
+    USER ||--o{ CHAT_PARTICIPANT : "participe"
+    USER ||--o{ TRANSACTION : "effectue"
+    USER ||--o{ GIFT_SENT : "envoie"
+    USER ||--o{ STAKING_CONTRACT : "cree"
+    USER ||--o{ REFERRAL_LOG : "parraine"
+    USER ||--o{ MATCHMAKING_SESSION : "participe"
+    USER ||--o{ MARRIAGE_STAKE : "participe"
+    USER }o--|| SUBSCRIPTION_PLANS : "souscrit"
 
-  User ||--o{ PaymentTransaction : makes
-  User ||--o{ UserSubscription : has
-  SubscriptionPlan ||--o{ UserSubscription : defines
+    USER {
+        uuid id PK
+        string phone UK
+        string email UK
+        string pi_wallet_address UK
+        string referral_code UK
+        uuid referred_by_id FK
+        int successful_referrals_count
+        boolean is_founder
+        int founder_rank
+        boolean is_revenue_sharing_active
+        timestamp revenue_sharing_joined_at
+        string display_name
+        string bio
+        date birthdate
+        jsonb lifestyle_tags
+        jsonb location
+        enum verification_status
+        decimal trust_score
+        uuid subscription_plan_id FK
+        decimal pi_balance
+        decimal fiat_balance
+    }
 
-  User ||--o{ ReferralLog : refers
-  User ||--o| Founder : may_become
-  Founder ||--o{ FounderDividend : receives
-  RevenuePool ||--o{ RevenueDistribution : funds
-  RevenueDistribution ||--o{ FounderDividend : distributes
+    REFERRAL_LOG {
+        uuid id PK
+        uuid referrer_id FK
+        uuid referee_id FK
+        enum status
+        boolean verification_passed
+        boolean counts_for_revenue_sharing
+    }
 
-  User ||--o{ GiftTransaction : sends_or_receives
-  Gift ||--o{ GiftTransaction : used_in
+    MATCHMAKING_SESSION {
+        uuid id PK
+        uuid user_id FK
+        enum status
+        uuid profile_1_id FK
+        uuid profile_2_id FK
+        uuid profile_3_id FK
+        uuid dropped_profile_id FK
+        uuid final_choice_id FK
+    }
 
-  User ||--o{ StakePosition : creates
-  StakePosition ||--o{ VisibilityBoost : grants
+    MARRIAGE_STAKE {
+        uuid id PK
+        uuid user_1_id FK
+        uuid user_2_id FK
+        decimal amount_pi
+        enum status
+        string verification_code
+    }
 
-  User ||--o{ MarriageProposal : creates
-  MarriageProposal ||--o| Marriage : may_create
-  Marriage ||--o{ MarriageStake : contains
+    REVENUE_POOL {
+        uuid id PK
+        string period
+        decimal total_revenue
+        decimal distributable_amount
+        int active_founder_count
+        decimal dividend_per_founder
+        enum status
+    }
 
-  User ||--o{ Notification : receives
-  User ||--o{ Report : submits
-  User ||--o{ Block : creates
+    REVENUE_DISTRIBUTION {
+        uuid id PK
+        uuid pool_id FK
+        uuid founder_id FK
+        decimal amount
+        enum status
+    }
+
+    TRANSACTION {
+        uuid id PK
+        uuid user_id FK
+        enum type
+        enum currency
+        decimal amount
+        enum provider
+        string external_ref
+    }
 ```
 
-## Technology stack
+---
+
+## 🏗️ Tech Stack
 
 | Layer | Technology |
-| --- | --- |
-| Mobile frontend | Expo, React Native, Expo Router, TypeScript, React Query, Zustand, Reanimated |
-| Backend | NestJS, TypeScript, TypeORM, class-validator, Socket.IO |
-| Database/cache | PostgreSQL 15+, Redis 7 |
-| Jobs/schedules | `@nestjs/schedule`; BullMQ-ready structure |
-| Media | AWS S3 with Cloudflare CDN-ready configuration |
-| AI | OpenAI-ready service layer for coach, bios, ice-breakers and moderation helpers |
-| Payments | Pi provider plus Moneroo/AvadaPay/Coinbase Commerce secure stubs pending real integration |
-| Observability | Healthcheck, request IDs, PostHog/Sentry-ready services |
-| CI/CD | GitHub Actions with backend lint/build/test/migrations and frontend install/typecheck/lint |
+|-------|-----------|
+| Frontend | React Native (Expo), Expo Router, Reanimated |
+| Backend | Node.js + NestJS + TypeORM |
+| Database | PostgreSQL 15+ |
+| Cache / Pub-Sub | Redis 7 |
+| Real-time | Socket.IO (WebSocket) |
+| File Storage | AWS S3 + Cloudflare CDN |
+| AI | OpenAI GPT-4o-mini (coach, bio, ice-breakers) |
+| Verification | AWS Rekognition (liveness detection) |
+| Notifications | Firebase Cloud Messaging |
+| Payments | Stripe + Pi Network SDK + AvadaPay + Moneroo |
+| Infrastructure | Docker + Docker Compose |
 
-## Repository layout
+---
 
-```text
-backend/      NestJS API, TypeORM entities, migrations, services and tests
-frontend/     Expo Router mobile app and frontend service layer
-docs/         Phase-by-phase production-readiness notes
-docker-compose.yml
-README.md
-SECURITY.md
-DEPLOYMENT.md
-ENVIRONMENT.md
-PRODUCTION_READINESS_REPORT.md
+## 📁 Project Structure
+
+```
+lynk/
+├── backend/                  # NestJS API
+│   ├── src/
+│   │   ├── common/           # Enums, constants, guards, decorators
+│   │   ├── config/           # App & TypeORM configuration
+│   │   └── modules/
+│   │       ├── auth/         # JWT, OAuth, Pi Wallet auth
+│   │       ├── user/         # User entity & profile management
+│   │       ├── profile/      # Media upload, prompts, AI bio
+│   │       ├── verification/ # AWS Rekognition liveness + KYC
+│   │       ├── matchmaking/  # Swipe engine, AI Matchmaker
+│   │       ├── chat/         # WebSocket chat, E2E encryption
+│   │       ├── payment/      # Stripe, Pi, AvadaPay, Moneroo
+│   │       ├── subscription/ # Plans seeding & management
+│   │       ├── referral/     # Referral + monthly revenue distribution
+│   │       ├── staking/      # Anti-ghosting date staking
+│   │       ├── marriage/     # Marriage Stake Web3 contract
+│   │       ├── gift/         # Virtual gift catalogue
+│   │       ├── ai/           # OpenAI service
+│   │       ├── s3/           # AWS S3 uploads
+│   │       └── notification/ # Firebase FCM
+│   ├── Dockerfile
+│   └── .env.example
+│
+├── frontend/                 # React Native (Expo)
+│   ├── app/
+│   │   ├── index.tsx         # Route guard (auth → onboarding → home)
+│   │   ├── auth/             # welcome, login, register, onboarding
+│   │   ├── home/             # Swipe deck
+│   │   ├── chat/             # Chat list + room
+│   │   ├── profile/          # Profile view
+│   │   └── referral/         # Founder dashboard
+│   └── src/
+│       ├── components/ui/    # GlassCard, NeonButton, GradientText, Badges
+│       ├── constants/        # theme.ts, api.ts
+│       ├── providers/        # AuthProvider
+│       └── services/         # Axios API client with JWT refresh
+│
+└── docker-compose.yml
 ```
 
-## Quick local setup
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js ≥ 22
+- Docker & Docker Compose
 
 ### 1. Start infrastructure
 
@@ -110,44 +193,79 @@ docker-compose up postgres redis -d
 ```bash
 cd backend
 cp .env.example .env
-# edit .env: replace every placeholder secret and configure ALLOWED_ORIGINS
-npm ci
-npm run migration:run
+# Fill in your secrets
+npm install
 npm run start:dev
 ```
+
+Swagger docs: `http://localhost:3000/api/docs`
 
 ### 3. Configure frontend
 
 ```bash
 cd frontend
-npm ci --legacy-peer-deps
-npm run typecheck
-npm run start
+cp .env.example .env
+npm install
+npx expo start
 ```
 
-If local `npm ci` is blocked by the registry/proxy for Expo/React Native packages, use GitHub Actions or an unblocked npm network and keep the failure visible instead of bypassing it.
+---
 
-## Validation commands
+## 🌟 Key Business Rules
 
-```bash
-cd backend
-npm run lint:check
-npm run build
-npm test -- --runInBand
-npm run migration:run
+### Founder Programme
+- The **first 2500 users** to register are automatically assigned `isFounder = true` and a unique `founderRank` (1–2500).
+- This status is **permanent** and **cannot be purchased**.
+- A Founder activates **Revenue Sharing** once they have referred **5 verified users** (i.e., users who passed AI liveness verification).
+
+### Monthly Revenue Distribution (Cron Job)
+```
+Runs: 1st of every month at 02:00 UTC
+Pool: 5% of prior month's subscription + boost + gift revenue
+Recipients: All Founders where isRevenueSharingActive = true
+Method: Transactional DB update → no double payments
 ```
 
-```bash
-cd frontend
-npm ci --legacy-peer-deps
-npm run typecheck
-npm run lint
-npm run doctor
+### Anti-Ghosting Smart Contract
+- Both parties stake equal Pi for an IRL date.
+- Confirmation window: ±1 hour around the scheduled date time (geolocation-based).
+- If both confirm → stakes returned.
+- If one ghosts → victim receives both stakes.
+
+### AI Matchmaker (Platinum Only)
+- Quarterly allocation: 1 session per quarter.
+- Flow: 3 AI-selected profiles → user eliminates 1 after discussion → final choice from remaining 2 → auto-match.
+
+---
+
+## 🎨 Design Tokens
+
+```typescript
+COLORS = {
+  background: '#0A0A0A',
+  surface: '#1A1A2E',
+  primaryViolet: '#6C3BFF',
+  electricBlue: '#00C2FF',
+  neonPink: '#FF4FD8',
+  gold: '#FFD700',
+}
 ```
 
-## Production documents
+UI style: **Dark Premium Glassmorphism** — blur cards, neon borders, smooth Reanimated animations, Poppins/Sora typography.
 
-- [`ENVIRONMENT.md`](./ENVIRONMENT.md) — required variables and secret rules.
-- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — deployment and migration flow.
-- [`SECURITY.md`](./SECURITY.md) — security posture and reporting guidance.
-- [`PRODUCTION_READINESS_REPORT.md`](./PRODUCTION_READINESS_REPORT.md) — readiness score, completed hardening, remaining risks.
+---
+
+## 📌 Environment Secrets Required
+
+| Secret | Purpose |
+|--------|---------|
+| `JWT_ACCESS_SECRET` | JWT signing |
+| `OPENAI_API_KEY` | AI coach + bio + moderation |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | S3 uploads + Rekognition |
+| `FIREBASE_*` | Push notifications |
+| `STRIPE_SECRET_KEY` | Card payments |
+| `PI_API_KEY` | Pi Network auth & payments |
+| `AVADAPAY_API_KEY` | Mobile Money (Africa) |
+| `MONEROO_API_KEY` | Additional payment gateway |
+
+Set these in your `.env` file or as Docker environment variables.
