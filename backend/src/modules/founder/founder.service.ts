@@ -1,9 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { MAX_FOUNDERS } from '../../common/constants';
 import { User } from '../user/entities/user.entity';
 import { Founder } from './entities/founder.entity';
+import { ObservabilityService } from '../observability/observability.service';
+import { ObservabilityEventName } from '../observability/observability-events';
 
 @Injectable()
 export class FounderService {
@@ -11,6 +13,8 @@ export class FounderService {
     @InjectRepository(Founder)
     private readonly founderRepository: Repository<Founder>,
     private readonly dataSource: DataSource,
+    @Optional()
+    private readonly observabilityService?: ObservabilityService,
   ) {}
 
   async allocateFounderSlot(userId: string): Promise<Founder> {
@@ -69,6 +73,12 @@ export class FounderService {
       isFounder: true,
       founderRank: founderNumber,
     });
+
+    void this.observabilityService?.track(
+      ObservabilityEventName.FOUNDER_JOINED,
+      userId,
+      { founderNumber },
+    );
 
     return founder;
   }

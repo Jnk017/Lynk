@@ -39,6 +39,7 @@ export interface VerifyPaymentResult {
 export interface WebhookResult {
   provider: TransactionProvider;
   externalRef?: string;
+  externalEventId?: string;
   processed: boolean;
   eventType?: string;
 }

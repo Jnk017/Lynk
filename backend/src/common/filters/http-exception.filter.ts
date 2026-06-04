@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { ObservabilityService } from '../../modules/observability/observability.service';
 
 type RequestWithId = Request & { requestId?: string };
 
@@ -23,6 +24,8 @@ interface ErrorResponseBody {
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
+
+  constructor(private readonly observabilityService?: ObservabilityService) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
@@ -54,6 +57,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
         `${request.method} ${request.originalUrl} failed with ${status}`,
         exception instanceof Error ? exception.stack : 'Unknown exception',
       );
+      void this.observabilityService?.captureException(exception, {
+        method: request.method,
+        path: request.originalUrl,
+        requestId: request.requestId,
+        status,
+      });
     }
 
     response.status(status).json(body);

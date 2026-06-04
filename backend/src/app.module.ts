@@ -30,6 +30,7 @@ import { SystemSetting } from './modules/system-settings/entities/system-setting
 import { FeatureFlag } from './modules/feature-flag/entities/feature-flag.entity';
 import { AuditLog } from './modules/audit-log/entities/audit-log.entity';
 import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
+import { Report } from './modules/moderation/entities/report.entity';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -51,6 +52,8 @@ import { FounderModule } from './modules/founder/founder.module';
 import { SystemSettingsModule } from './modules/system-settings/system-settings.module';
 import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { ObservabilityModule } from './modules/observability/observability.module';
 
 @Module({
   imports: [
@@ -93,6 +96,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
           FeatureFlag,
           AuditLog,
           RefreshToken,
+          Report,
         ],
         synchronize:
           configService.get<boolean>('database.synchronize') === true,
@@ -139,6 +143,8 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
     SystemSettingsModule,
     FeatureFlagModule,
     AuditLogModule,
+    AdminModule,
+    ObservabilityModule,
   ],
 })
 export class AppModule {}

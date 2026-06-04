@@ -2,6 +2,7 @@ import aiConfig from './ai.config';
 import appConfig from './app.config';
 import awsConfig from './aws.config';
 import databaseConfig from './database.config';
+import observabilityConfig from './observability.config';
 import paymentConfig from './payment.config';
 import piConfig from './pi.config';
 import redisConfig from './redis.config';
@@ -18,6 +19,7 @@ export default () => ({
   },
   ...awsConfig(),
   ...aiConfig(),
+  ...observabilityConfig(),
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID || '',
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
