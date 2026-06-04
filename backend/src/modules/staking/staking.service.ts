@@ -33,15 +33,15 @@ export class StakingService {
     dateScheduledAt: Date,
     dateLocation: string,
   ): Promise<StakingContract> {
-    const [creator, partner] = await Promise.all([
-      this.userRepository.findOne({ where: { id: creatorId } }),
-      this.userRepository.findOne({ where: { id: partnerId } }),
-    ]);
-
-    if (!creator || !partner) throw new NotFoundException('User not found');
-
-    if (creator.piBalance < stakeAmountPiEach) {
-      throw new BadRequestException('Insufficient Pi balance');
+    if (creatorId === partnerId) {
+      throw new BadRequestException('Cannot create a stake with yourself');
+    }
+    this.assertValidStakeAmount(stakeAmountPiEach);
+    if (Number.isNaN(dateScheduledAt.getTime())) {
+      throw new BadRequestException('Invalid date scheduled at');
+    }
+    if (dateScheduledAt <= new Date()) {
+      throw new BadRequestException('Date must be scheduled in the future');
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -49,10 +49,33 @@ export class StakingService {
     await queryRunner.startTransaction();
 
     try {
-      // Lock Pi from both users
+      const creator = await queryRunner.manager.findOne(User, {
+        where: { id: creatorId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      const partner = await queryRunner.manager.findOne(User, {
+        where: { id: partnerId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!creator || !partner) throw new NotFoundException('User not found');
+
+      if (
+        Number(creator.piBalance) < stakeAmountPiEach ||
+        Number(partner.piBalance) < stakeAmountPiEach
+      ) {
+        throw new BadRequestException('Insufficient Pi balance');
+      }
+
       await queryRunner.manager.decrement(
         User,
         { id: creatorId },
+        'piBalance',
+        stakeAmountPiEach,
+      );
+      await queryRunner.manager.decrement(
+        User,
+        { id: partnerId },
         'piBalance',
         stakeAmountPiEach,
       );
@@ -184,51 +207,75 @@ export class StakingService {
     await queryRunner.startTransaction();
 
     try {
-      const totalStake = contract.stakeAmountPiEach * 2;
+      const lockedContract = await queryRunner.manager.findOne(
+        StakingContract,
+        {
+          where: { id: contract.id },
+          lock: { mode: 'pessimistic_write' },
+        },
+      );
+      if (!lockedContract) {
+        throw new NotFoundException('Staking contract not found');
+      }
+      if (lockedContract.status !== StakingContractStatus.ACTIVE) {
+        throw new BadRequestException('Contract has already been resolved');
+      }
+
+      const stakeAmount = Number(lockedContract.stakeAmountPiEach);
+      this.assertValidStakeAmount(stakeAmount);
+      const totalStake = stakeAmount * 2;
 
       if (resolution === 'both' || resolution === 'cancelled') {
         await queryRunner.manager.increment(
           User,
-          { id: contract.creatorId },
+          { id: lockedContract.creatorId },
           'piBalance',
-          contract.stakeAmountPiEach,
+          stakeAmount,
         );
         await queryRunner.manager.increment(
           User,
-          { id: contract.partnerId },
+          { id: lockedContract.partnerId },
           'piBalance',
-          contract.stakeAmountPiEach,
+          stakeAmount,
         );
-        contract.status =
+        lockedContract.status =
           resolution === 'both'
             ? StakingContractStatus.RESOLVED_BOTH
             : StakingContractStatus.CANCELLED;
       } else if (resolution === 'victim_creator') {
+        lockedContract.victimId = lockedContract.creatorId;
         await queryRunner.manager.increment(
           User,
-          { id: contract.creatorId },
+          { id: lockedContract.creatorId },
           'piBalance',
           totalStake,
         );
-        contract.status = StakingContractStatus.RESOLVED_VICTIM;
+        lockedContract.status = StakingContractStatus.RESOLVED_VICTIM;
       } else {
+        lockedContract.victimId = lockedContract.partnerId;
         await queryRunner.manager.increment(
           User,
-          { id: contract.partnerId },
+          { id: lockedContract.partnerId },
           'piBalance',
           totalStake,
         );
-        contract.status = StakingContractStatus.RESOLVED_VICTIM;
+        lockedContract.status = StakingContractStatus.RESOLVED_VICTIM;
       }
 
-      contract.resolvedAt = new Date();
-      await queryRunner.manager.save(StakingContract, contract);
+      lockedContract.resolvedAt = new Date();
+      await queryRunner.manager.save(StakingContract, lockedContract);
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  private assertValidStakeAmount(amount: number): void {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Stake amount must be greater than zero');
     }
   }
 }

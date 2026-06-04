@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,33 +14,62 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
 import { GlassCard } from '../../src/components/ui/GlassCard';
+import { NeonButton } from '../../src/components/ui/NeonButton';
+import { ReferralStats, RevenueDistribution, RevenuePool } from '../../src/types/api';
+import { getErrorMessage } from '../../src/utils/errors';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../src/constants/theme';
 
+interface ReferralDashboardStats extends ReferralStats {
+  totalReferrals?: number;
+  qualifyingReferrals?: number;
+  referralsNeeded?: number;
+}
+
+interface FounderRevenueDistribution extends RevenueDistribution {
+  pool?: { period?: string };
+}
+
 export default function ReferralScreen() {
-  const { data: stats } = useQuery({
+  const [shareError, setShareError] = useState<string | null>(null);
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+    error: statsErrorValue,
+    refetch: refetchStats,
+    isFetching: statsFetching,
+  } = useQuery<ReferralDashboardStats>({
     queryKey: ['referralStats'],
-    queryFn: () => api.get<any>(API_ENDPOINTS.referral.stats),
+    queryFn: () => api.get<ReferralDashboardStats>(API_ENDPOINTS.referral.stats),
   });
 
-  const { data: distributions = [] } = useQuery({
+  const { data: distributions = [], isError: distributionsError } = useQuery<FounderRevenueDistribution[]>({
     queryKey: ['distributions'],
-    queryFn: () => api.get<any[]>(API_ENDPOINTS.referral.distributions),
+    queryFn: () => api.get<FounderRevenueDistribution[]>(API_ENDPOINTS.referral.distributions),
   });
 
-  const { data: pools = [] } = useQuery({
+  const { data: pools = [], isError: poolsError } = useQuery<RevenuePool[]>({
     queryKey: ['revenuePools'],
-    queryFn: () => api.get<any[]>(API_ENDPOINTS.referral.pools),
+    queryFn: () => api.get<RevenuePool[]>(API_ENDPOINTS.referral.pools),
   });
 
   const shareReferral = async () => {
-    await Share.share({
-      message: `Join Lynk – the premium Web3 dating app! Use my referral code ${stats?.referralCode} to register. First 2500 members become permanent Founders with 5% revenue sharing! https://lynk.app/r/${stats?.referralCode}`,
-    });
+    if (!stats?.referralCode) {
+      setShareError('Referral code is not available yet.');
+      return;
+    }
+    try {
+      setShareError(null);
+      await Share.share({
+        message: `Join Lynk – the premium Web3 dating app! Use my referral code ${stats.referralCode} to register. First 2500 members become permanent Founders with 5% revenue sharing! https://lynk.app/r/${stats.referralCode}`,
+      });
+    } catch (error) {
+      setShareError(getErrorMessage(error, 'Unable to open the share sheet.'));
+    }
   };
 
-  const progress = stats
-    ? Math.min((stats.qualifyingReferrals / 5) * 100, 100)
-    : 0;
+  const qualifyingReferrals = stats?.qualifyingReferrals || 0;
+  const progress = stats ? Math.min((qualifyingReferrals / 5) * 100, 100) : 0;
 
   return (
     <View style={styles.container}>
@@ -55,8 +84,19 @@ export default function ReferralScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll}>
+          {statsLoading ? (
+            <GlassCard>
+              <Text style={styles.sectionTitle}>Loading founder dashboard...</Text>
+            </GlassCard>
+          ) : statsError ? (
+            <GlassCard style={styles.errorCard}>
+              <Text style={styles.errorText}>{getErrorMessage(statsErrorValue, 'Unable to load referral stats.')}</Text>
+              <NeonButton label="Retry" onPress={() => refetchStats()} loading={statsFetching} variant="outline" />
+            </GlassCard>
+          ) : null}
+
           {/* Founder status card */}
-          {stats?.isFounder ? (
+          {!statsLoading && !statsError && stats?.isFounder ? (
             <GlassCard style={[styles.founderCard, SHADOWS.goldGlow]}>
               <Text style={styles.founderTitle}>👑 Founder #{stats.founderRank}</Text>
               <Text style={styles.founderStatus}>
@@ -76,20 +116,22 @@ export default function ReferralScreen() {
                 </View>
               )}
             </GlassCard>
-          ) : (
+          ) : !statsLoading && !statsError ? (
             <GlassCard style={styles.nonFounderCard}>
               <Text style={styles.nonFounderText}>
                 ⚠️ You are not a Founder. The first 2500 member spots are taken. Founding status cannot be purchased.
               </Text>
             </GlassCard>
-          )}
+          ) : null}
 
           {/* Referral code */}
+          {!statsError && (
           <GlassCard>
             <Text style={styles.sectionTitle}>Your Referral Code</Text>
             <View style={styles.codeBox}>
               <Text style={styles.referralCode}>{stats?.referralCode || '...'}</Text>
             </View>
+            {shareError ? <Text style={styles.errorText}>{shareError}</Text> : null}
             <TouchableOpacity style={styles.shareBtn} onPress={shareReferral}>
               <LinearGradient
                 colors={[COLORS.primaryViolet, COLORS.electricBlue]}
@@ -101,8 +143,10 @@ export default function ReferralScreen() {
               </LinearGradient>
             </TouchableOpacity>
           </GlassCard>
+          )}
 
           {/* Stats overview */}
+          {!statsError && (
           <GlassCard>
             <Text style={styles.sectionTitle}>Referral Stats</Text>
             {[
@@ -116,12 +160,17 @@ export default function ReferralScreen() {
               </View>
             ))}
           </GlassCard>
+          )}
+
+          {(poolsError || distributionsError) && (
+            <Text style={styles.errorText}>Some revenue history could not be loaded.</Text>
+          )}
 
           {/* Revenue pools history */}
           {pools.length > 0 && (
             <View>
               <Text style={styles.sectionHeader}>Revenue Pool History</Text>
-              {pools.map((pool: any) => (
+              {pools.map((pool: RevenuePool) => (
                 <GlassCard key={pool.id} style={{ marginBottom: SPACING.sm }}>
                   <View style={styles.poolHeader}>
                     <Text style={styles.poolPeriod}>📅 {pool.period}</Text>
@@ -154,7 +203,7 @@ export default function ReferralScreen() {
           {distributions.length > 0 && (
             <View>
               <Text style={styles.sectionHeader}>My Distributions</Text>
-              {distributions.slice(0, 5).map((dist: any) => (
+              {distributions.slice(0, 5).map((dist: FounderRevenueDistribution) => (
                 <View key={dist.id} style={styles.distRow}>
                   <View>
                     <Text style={styles.distPeriod}>{dist.pool?.period}</Text>
@@ -186,6 +235,8 @@ const styles = StyleSheet.create({
   progressText: { color: COLORS.textTertiary, fontSize: 13 },
   nonFounderCard: { borderColor: COLORS.warning },
   nonFounderText: { color: COLORS.warning, fontSize: 14, lineHeight: 22 },
+  errorCard: { borderColor: COLORS.error, gap: SPACING.md },
+  errorText: { color: COLORS.error, lineHeight: 20, textAlign: 'center' },
   sectionTitle: { ...TYPOGRAPHY.label, marginBottom: SPACING.md },
   codeBox: { backgroundColor: COLORS.glass, borderRadius: 12, padding: SPACING.lg, alignItems: 'center', marginBottom: SPACING.md, borderWidth: 1, borderColor: COLORS.glassBorder },
   referralCode: { fontSize: 28, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },

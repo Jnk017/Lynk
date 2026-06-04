@@ -32,38 +32,78 @@ export class MarriageService {
     user2Id: string,
     amountPi: number,
   ): Promise<MarriageStake> {
-    const [user1, user2] = await Promise.all([
-      this.userRepository.findOne({
-        where: { id: user1Id },
-        relations: ['subscriptionPlan'],
-      }),
-      this.userRepository.findOne({
-        where: { id: user2Id },
-        relations: ['subscriptionPlan'],
-      }),
-    ]);
-
-    if (!user1 || !user2) throw new NotFoundException('User not found');
-
-    if (!user1.subscriptionPlan?.hasMarriageStaking) {
-      throw new ForbiddenException(
-        'Marriage Staking requires Gold or Platinum subscription',
+    if (user1Id === user2Id) {
+      throw new BadRequestException(
+        'Cannot create a marriage stake with yourself',
       );
     }
+    this.assertValidAmount(amountPi);
 
-    if (user1.piBalance < amountPi / 2) {
-      throw new BadRequestException('Insufficient Pi balance');
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const user1 = await queryRunner.manager.findOne(User, {
+        where: { id: user1Id },
+        relations: ['subscriptionPlan'],
+        lock: { mode: 'pessimistic_write' },
+      });
+      const user2 = await queryRunner.manager.findOne(User, {
+        where: { id: user2Id },
+        relations: ['subscriptionPlan'],
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!user1 || !user2) throw new NotFoundException('User not found');
+
+      if (
+        !user1.subscriptionPlan?.hasMarriageStaking ||
+        !user2.subscriptionPlan?.hasMarriageStaking
+      ) {
+        throw new ForbiddenException(
+          'Marriage Staking requires Gold or Platinum subscription for both users',
+        );
+      }
+
+      const perUserStake = amountPi / 2;
+      if (
+        Number(user1.piBalance) < perUserStake ||
+        Number(user2.piBalance) < perUserStake
+      ) {
+        throw new BadRequestException('Insufficient Pi balance');
+      }
+
+      await queryRunner.manager.decrement(
+        User,
+        { id: user1Id },
+        'piBalance',
+        perUserStake,
+      );
+      await queryRunner.manager.decrement(
+        User,
+        { id: user2Id },
+        'piBalance',
+        perUserStake,
+      );
+
+      const verificationCode = uuidv4().substring(0, 8).toUpperCase();
+      const stake = await queryRunner.manager.save(MarriageStake, {
+        user1Id,
+        user2Id,
+        amountPi,
+        status: MarriageStakeStatus.ACTIVE,
+        verificationCode,
+      });
+
+      await queryRunner.commitTransaction();
+      return stake;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    const verificationCode = uuidv4().substring(0, 8).toUpperCase();
-
-    return this.marriageRepository.save({
-      user1Id,
-      user2Id,
-      amountPi,
-      status: MarriageStakeStatus.ACTIVE,
-      verificationCode,
-    });
   }
 
   /**
@@ -89,8 +129,12 @@ export class MarriageService {
       throw new BadRequestException('Stake is not in active status');
     }
 
-    stake.marriageProofUrl = marriageProofUrl;
-    stake.marriagePhotoUrl = marriagePhotoUrl;
+    if (!marriageProofUrl.trim() || !marriagePhotoUrl.trim()) {
+      throw new BadRequestException('Marriage proof URLs are required');
+    }
+
+    stake.marriageProofUrl = marriageProofUrl.trim();
+    stake.marriagePhotoUrl = marriagePhotoUrl.trim();
     stake.status = MarriageStakeStatus.PROOF_SUBMITTED;
     return this.marriageRepository.save(stake);
   }
@@ -100,21 +144,24 @@ export class MarriageService {
    * Applies a 10% loyalty bonus on top of the staked amount.
    */
   async releaseStake(stakeId: string): Promise<MarriageStake> {
-    const stake = await this.marriageRepository.findOne({
-      where: { id: stakeId },
-    });
-    if (!stake) throw new NotFoundException('Marriage stake not found');
-    if (stake.status !== MarriageStakeStatus.PROOF_SUBMITTED) {
-      throw new BadRequestException('Stake proof has not been submitted');
-    }
-
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const loyaltyBonus = Number(stake.amountPi) * LOYALTY_BONUS_PERCENTAGE;
-      const totalReturn = Number(stake.amountPi) + loyaltyBonus;
+      const stake = await queryRunner.manager.findOne(MarriageStake, {
+        where: { id: stakeId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!stake) throw new NotFoundException('Marriage stake not found');
+      if (stake.status !== MarriageStakeStatus.PROOF_SUBMITTED) {
+        throw new BadRequestException('Stake proof has not been submitted');
+      }
+
+      const amountPi = Number(stake.amountPi);
+      this.assertValidAmount(amountPi);
+      const loyaltyBonus = amountPi * LOYALTY_BONUS_PERCENTAGE;
+      const totalReturn = amountPi + loyaltyBonus;
       const perUser = totalReturn / 2;
 
       await queryRunner.manager.increment(
@@ -143,6 +190,12 @@ export class MarriageService {
       throw error;
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  private assertValidAmount(amount: number): void {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Stake amount must be greater than zero');
     }
   }
 }

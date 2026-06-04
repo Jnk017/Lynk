@@ -14,15 +14,18 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
+import { NeonButton } from '../../src/components/ui/NeonButton';
+import { ChatParticipant, ChatRoom } from '../../src/types/api';
+import { getErrorMessage } from '../../src/utils/errors';
 
 export default function ChatListScreen() {
-  const { data: rooms = [], isLoading } = useQuery({
+  const { data: rooms = [], isLoading, isError, error, refetch, isFetching } = useQuery<ChatRoom[]>({
     queryKey: ['chatRooms'],
-    queryFn: () => api.get<any[]>(API_ENDPOINTS.chat.rooms),
+    queryFn: () => api.get<ChatRoom[]>(API_ENDPOINTS.chat.rooms),
   });
 
-  const renderRoom = ({ item }: { item: any }) => {
-    const otherParticipant = item.participants?.find((p: any) => p.user);
+  const renderRoom = ({ item }: { item: ChatRoom }) => {
+    const otherParticipant = item.participants?.find((p: ChatParticipant) => p.user);
     const photo = otherParticipant?.user?.media?.[0]?.url;
     const name = otherParticipant?.user?.displayName || 'Unknown';
     const isOnline = otherParticipant?.user?.isOnline;
@@ -80,6 +83,13 @@ export default function ChatListScreen() {
         {isLoading ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>Loading chats...</Text>
+          </View>
+        ) : isError ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyEmoji}>⚠️</Text>
+            <Text style={styles.emptyTitle}>Unable to load chats</Text>
+            <Text style={styles.emptyText}>{getErrorMessage(error, 'Please check your connection and try again.')}</Text>
+            <NeonButton label="Retry" onPress={() => refetch()} loading={isFetching} variant="outline" style={{ marginTop: SPACING.md }} />
           </View>
         ) : rooms.length === 0 ? (
           <View style={styles.empty}>

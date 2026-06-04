@@ -20,20 +20,31 @@ import { API_ENDPOINTS } from '../../src/constants/api';
 import { WS_URL } from '../../src/constants/api';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/ui/GlassCard';
+import { NeonButton } from '../../src/components/ui/NeonButton';
 import { useAuth } from '../../src/providers/AuthProvider';
+import { ChatMessage } from '../../src/types/api';
+import { getErrorMessage } from '../../src/utils/errors';
 
 export default function ChatRoomScreen() {
   const { roomId } = useLocalSearchParams<{ roomId: string }>();
   const { user } = useAuth();
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [socketError, setSocketError] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
-  const { data: initialMessages = [] } = useQuery({
+  const {
+    data: initialMessages = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useQuery<ChatMessage[]>({
     queryKey: ['messages', roomId],
-    queryFn: () => api.get<any[]>(API_ENDPOINTS.chat.messages(roomId!)),
+    queryFn: () => api.get<ChatMessage[]>(API_ENDPOINTS.chat.messages(roomId!)),
     enabled: !!roomId,
   });
 
@@ -53,7 +64,11 @@ export default function ChatRoomScreen() {
         transports: ['websocket'],
       });
 
-      socket.on('message:new', (msg: any) => {
+      socket.on('connect', () => setSocketError(null));
+      socket.on('connect_error', () => setSocketError('Unable to connect to chat. Messages may be delayed.'));
+      socket.on('disconnect', () => setSocketError('Chat connection lost. Reconnecting...'));
+
+      socket.on('message:new', (msg: ChatMessage) => {
         if (msg.chatRoomId === roomId) {
           setMessages((prev) => [...prev, msg]);
         }
@@ -77,12 +92,16 @@ export default function ChatRoomScreen() {
   }, [roomId]);
 
   const sendMessage = () => {
-    if (!input.trim() || !socketRef.current) return;
+    if (!input.trim()) return;
+    if (!socketRef.current?.connected) {
+      setSocketError('Chat is not connected. Please wait and try again.');
+      return;
+    }
     socketRef.current.emit('message:send', { chatRoomId: roomId, content: input.trim() });
     setInput('');
   };
 
-  const renderMessage = ({ item }: { item: any }) => {
+  const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isMine = item.senderId === user?.id;
     return (
       <View style={[styles.messageRow, isMine ? styles.myRow : styles.theirRow]}>
@@ -115,6 +134,14 @@ export default function ChatRoomScreen() {
           style={{ flex: 1 }}
           keyboardVerticalOffset={0}
         >
+          {socketError ? <Text style={styles.errorText}>{socketError}</Text> : null}
+          {isError ? (
+            <GlassCard style={styles.errorCard}>
+              <Text style={styles.errorTitle}>Unable to load messages</Text>
+              <Text style={styles.errorText}>{getErrorMessage(error, 'Please check your connection and try again.')}</Text>
+              <NeonButton label="Retry" onPress={() => refetch()} loading={isFetching} variant="outline" style={{ marginTop: SPACING.md }} />
+            </GlassCard>
+          ) : (
           <FlatList
             ref={flatListRef}
             data={messages}
@@ -122,6 +149,13 @@ export default function ChatRoomScreen() {
             renderItem={renderMessage}
             contentContainerStyle={{ padding: SPACING.md }}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+            ListEmptyComponent={
+              isLoading ? (
+                <Text style={styles.emptyText}>Loading messages...</Text>
+              ) : (
+                <Text style={styles.emptyText}>No messages yet. Say hello ✨</Text>
+              )
+            }
             ListFooterComponent={
               isTyping ? (
                 <View style={styles.typingIndicator}>
@@ -130,6 +164,7 @@ export default function ChatRoomScreen() {
               ) : null
             }
           />
+          )}
 
           <View style={styles.inputBar}>
             <TouchableOpacity style={styles.attachBtn}>
@@ -180,6 +215,10 @@ const styles = StyleSheet.create({
   messageTime: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 4, textAlign: 'right' },
   typingIndicator: { padding: SPACING.sm },
   typingText: { color: COLORS.textTertiary, fontStyle: 'italic', fontSize: 13 },
+  emptyText: { ...TYPOGRAPHY.bodySecondary, textAlign: 'center', marginTop: SPACING.xl },
+  errorCard: { margin: SPACING.md },
+  errorTitle: { ...TYPOGRAPHY.h4, color: COLORS.error, marginBottom: SPACING.sm },
+  errorText: { color: COLORS.error, textAlign: 'center', marginHorizontal: SPACING.md, marginVertical: SPACING.sm },
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.glassBorder, gap: SPACING.sm },
   attachBtn: { paddingBottom: SPACING.xs },
   input: { flex: 1, backgroundColor: COLORS.surface, borderRadius: 20, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, color: COLORS.textPrimary, fontSize: 15, maxHeight: 100 },

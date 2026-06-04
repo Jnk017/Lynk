@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { router } from 'expo-router';
+import { Href, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/providers/AuthProvider';
@@ -16,6 +16,20 @@ import { NeonButton } from '../../src/components/ui/NeonButton';
 import { FounderRankBadge } from '../../src/components/ui/FounderBadge';
 import { SubscriptionBadge } from '../../src/components/ui/SubscriptionBadge';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../src/constants/theme';
+import { SubscriptionTier } from '../../src/types/api';
+
+const PROFILE_MENU_ITEMS: Array<{ icon: string; label: string; route: Href }> = [
+  { icon: '🛡️', label: 'Verification & KYC', route: '/profile/verification' },
+  { icon: '💎', label: 'Subscription & Plans', route: '/shop/subscription' },
+  { icon: '🎁', label: 'Gift Store', route: '/shop/gifts' },
+  { icon: '💍', label: 'Marriage Stake', route: '/profile/marriage' },
+  { icon: '🤝', label: 'Anti-Ghosting Staking', route: '/profile/staking' },
+  { icon: '⚙️', label: 'Settings', route: '/profile/settings' },
+];
+
+function isSubscriptionTier(tier: string): tier is SubscriptionTier {
+  return ['bronze', 'silver', 'gold', 'platinum'].includes(tier);
+}
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -63,7 +77,7 @@ export default function ProfileScreen() {
                 <FounderRankBadge rank={user.founderRank} />
               )}
               {user.subscriptionPlan && (
-                <SubscriptionBadge tier={user.subscriptionPlan.name as any} />
+                <SubscriptionBadge tier={isSubscriptionTier(user.subscriptionPlan.name) ? user.subscriptionPlan.name : 'bronze'} />
               )}
               {user.verificationStatus === 'verified' && (
                 <View style={styles.verifiedBadge}>
@@ -117,18 +131,11 @@ export default function ProfileScreen() {
           )}
 
           {/* Menu items */}
-          {[
-            { icon: '🛡️', label: 'Verification & KYC', route: '/profile/verification' },
-            { icon: '💎', label: 'Subscription & Plans', route: '/shop/subscription' },
-            { icon: '🎁', label: 'Gift Store', route: '/shop/gifts' },
-            { icon: '💍', label: 'Marriage Stake', route: '/profile/marriage' },
-            { icon: '🤝', label: 'Anti-Ghosting Staking', route: '/profile/staking' },
-            { icon: '⚙️', label: 'Settings', route: '/profile/settings' },
-          ].map((item) => (
+          {PROFILE_MENU_ITEMS.map((item) => (
             <TouchableOpacity
               key={item.label}
               style={styles.menuItem}
-              onPress={() => router.push(item.route as any)}
+              onPress={() => router.push(item.route)}
             >
               <Text style={styles.menuIcon}>{item.icon}</Text>
               <Text style={styles.menuLabel}>{item.label}</Text>

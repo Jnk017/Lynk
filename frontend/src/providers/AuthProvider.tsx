@@ -8,6 +8,7 @@ import React, {
 import { api } from "../services/api";
 import { API_ENDPOINTS } from "../constants/api";
 import { trackFrontendEvent } from "../services/observability";
+import { SubscriptionTier } from "../types/api";
 
 interface User {
   id: string;
@@ -19,7 +20,7 @@ interface User {
   isRevenueSharingActive: boolean;
   verificationStatus: string;
   subscriptionPlan?: {
-    name: string;
+    name: SubscriptionTier;
     displayName: string;
     tierColor: string;
   };

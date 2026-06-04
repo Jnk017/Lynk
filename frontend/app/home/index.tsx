@@ -25,6 +25,9 @@ import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/ui/GlassCard';
+import { NeonButton } from '../../src/components/ui/NeonButton';
+import { PublicProfile, ProfileMedia } from '../../src/types/api';
+import { getErrorMessage } from '../../src/utils/errors';
 import { FounderBadge } from '../../src/components/ui/FounderBadge';
 import { SubscriptionBadge } from '../../src/components/ui/SubscriptionBadge';
 import { useAuth } from '../../src/providers/AuthProvider';
@@ -33,7 +36,7 @@ const { width, height } = Dimensions.get('window');
 const SWIPE_THRESHOLD = width * 0.35;
 const CARD_WIDTH = width - SPACING.xl * 2;
 
-function SwipeCard({ user: profile, onSwipe }: { user: any; onSwipe: (direction: 'left' | 'right' | 'up') => void }) {
+function SwipeCard({ user: profile, onSwipe }: { user: PublicProfile; onSwipe: (direction: 'left' | 'right' | 'up') => void }) {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const rotation = useSharedValue(0);
@@ -79,7 +82,7 @@ function SwipeCard({ user: profile, onSwipe }: { user: any; onSwipe: (direction:
     opacity: interpolate(translateY.value, [-SWIPE_THRESHOLD / 2, 0], [1, 0], Extrapolate.CLAMP),
   }));
 
-  const photos = profile.media?.filter((m: any) => m.type === 'photo') || [];
+  const photos = profile.media?.filter((m: ProfileMedia) => m.type === 'photo') || [];
   const mainPhoto = photos[photoIndex]?.url;
   const age = profile.birthdate
     ? Math.floor((Date.now() - new Date(profile.birthdate).getTime()) / (365.25 * 24 * 3600 * 1000))
@@ -104,7 +107,7 @@ function SwipeCard({ user: profile, onSwipe }: { user: any; onSwipe: (direction:
 
         {photos.length > 1 && (
           <View style={styles.photoIndicators}>
-            {photos.map((_: any, i: number) => (
+            {photos.map((_: ProfileMedia, i: number) => (
               <TouchableOpacity key={i} onPress={() => setPhotoIndex(i)}>
                 <View style={[styles.dot, i === photoIndex && styles.dotActive]} />
               </TouchableOpacity>
@@ -158,9 +161,16 @@ export default function HomeScreen() {
   const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const { data: profiles = [], isLoading } = useQuery({
+  const {
+    data: profiles = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useQuery<PublicProfile[]>({
     queryKey: ['discovery'],
-    queryFn: () => api.get<any[]>(API_ENDPOINTS.matching.discovery),
+    queryFn: () => api.get<PublicProfile[]>(API_ENDPOINTS.matching.discovery),
   });
 
   const swipeMutation = useMutation({
@@ -174,7 +184,10 @@ export default function HomeScreen() {
       if (!profile) return;
 
       const action = direction === 'right' ? 'like' : direction === 'up' ? 'super_like' : 'dislike';
-      swipeMutation.mutate({ targetId: profile.id, action });
+      swipeMutation.mutate(
+        { targetId: profile.id, action },
+        { onError: () => setCurrentIndex((i) => Math.max(0, i - 1)) },
+      );
       setCurrentIndex((i) => i + 1);
     },
     [profiles, currentIndex],
@@ -222,6 +235,13 @@ export default function HomeScreen() {
             <View style={[styles.card, styles.loadingCard]}>
               <Text style={{ color: COLORS.textSecondary }}>Loading profiles...</Text>
             </View>
+          ) : isError ? (
+            <GlassCard style={styles.emptyCard}>
+              <Text style={styles.emptyEmoji}>⚠️</Text>
+              <Text style={styles.emptyTitle}>Unable to load profiles</Text>
+              <Text style={styles.emptySubtitle}>{getErrorMessage(error, 'Please check your connection and try again.')}</Text>
+              <NeonButton label="Retry" onPress={() => refetch()} loading={isFetching} variant="outline" style={{ marginTop: SPACING.md }} />
+            </GlassCard>
           ) : !currentProfile ? (
             <GlassCard style={styles.emptyCard}>
               <Text style={styles.emptyEmoji}>🌍</Text>
@@ -243,6 +263,10 @@ export default function HomeScreen() {
             </>
           )}
         </View>
+
+        {swipeMutation.isError && (
+          <Text style={styles.actionError}>Swipe failed. Please try again.</Text>
+        )}
 
         {/* Action buttons */}
         <View style={styles.actions}>
@@ -316,6 +340,7 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 60, marginBottom: SPACING.md },
   emptyTitle: { ...TYPOGRAPHY.h3, textAlign: 'center', marginBottom: SPACING.sm },
   emptySubtitle: { ...TYPOGRAPHY.bodySecondary, textAlign: 'center', lineHeight: 22 },
+  actionError: { color: COLORS.error, textAlign: 'center', marginBottom: SPACING.sm },
   actions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: SPACING.xl, gap: SPACING.xl },
   actionBtn: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   nopeBtn: { borderColor: COLORS.error, backgroundColor: 'rgba(255,82,82,0.1)' },

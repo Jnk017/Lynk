@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/providers/AuthProvider';
+import { getErrorMessage } from '../../src/utils/errors';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { GlassCard } from '../../src/components/ui/GlassCard';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
@@ -56,8 +57,8 @@ export default function RegisterScreen() {
         referralCode: form.referralCode || undefined,
       });
       router.replace('/auth/onboarding');
-    } catch (e: any) {
-      setError(e?.response?.data?.message || 'Registration failed');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Registration failed'));
     } finally {
       setLoading(false);
     }
