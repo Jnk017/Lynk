@@ -136,23 +136,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('typing:start')
-  handleTypingStart(
+  async handleTypingStart(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { chatRoomId: string },
   ) {
+    await this.assertAuthenticatedParticipant(client, data.chatRoomId);
     client
       .to(`room:${data.chatRoomId}`)
       .emit('typing:start', { userId: client.userId });
   }
 
   @SubscribeMessage('typing:stop')
-  handleTypingStop(
+  async handleTypingStop(
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { chatRoomId: string },
   ) {
+    await this.assertAuthenticatedParticipant(client, data.chatRoomId);
     client
       .to(`room:${data.chatRoomId}`)
       .emit('typing:stop', { userId: client.userId });
+  }
+
+  private async assertAuthenticatedParticipant(
+    client: AuthenticatedSocket,
+    chatRoomId: string | undefined,
+  ): Promise<void> {
+    if (!client.userId) throw new WsException('Not authenticated');
+    if (!chatRoomId) throw new WsException('Chat room is required');
+    await this.chatService.assertParticipant(client.userId, chatRoomId);
   }
 
   /** Emit a message to a specific user if they're connected */

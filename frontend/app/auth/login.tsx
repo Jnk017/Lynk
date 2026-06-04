@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/providers/AuthProvider';
+import { getErrorMessage } from '../../src/utils/errors';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { GlassCard } from '../../src/components/ui/GlassCard';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
@@ -34,8 +35,8 @@ export default function LoginScreen() {
     try {
       await login(email, password);
       router.replace('/');
-    } catch (e: any) {
-      setError(e?.response?.data?.message || 'Invalid credentials');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e, 'Invalid credentials'));
     } finally {
       setLoading(false);
     }

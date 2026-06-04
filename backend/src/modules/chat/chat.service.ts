@@ -53,7 +53,8 @@ export class ChatService {
 
     const room = await this.chatRoomRepository.save({
       matchId,
-      isEncrypted: true,
+      // Messages are currently protected in transit by TLS but are not E2E encrypted.
+      isEncrypted: false,
     });
 
     await this.participantRepository.save([
@@ -183,10 +184,7 @@ export class ChatService {
       .execute();
   }
 
-  private async assertParticipant(
-    userId: string,
-    chatRoomId: string,
-  ): Promise<void> {
+  async assertParticipant(userId: string, chatRoomId: string): Promise<void> {
     const participant = await this.participantRepository.findOne({
       where: { userId, chatRoomId },
     });
