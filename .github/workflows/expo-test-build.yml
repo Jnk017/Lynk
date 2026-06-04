@@ -32,4 +32,4 @@ jobs:
 
       - name: 📱 Build Test App on Expo EAS
         working-directory: ./frontend
-        run: eas build --profile test-build --platform all --non-interactive
+        run: npx expo export
