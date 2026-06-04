@@ -1,17 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Optional,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { SubscriptionPlan } from './entities/subscription-plan.entity';
 import { User } from '../user/entities/user.entity';
 import { Transaction } from '../payment/entities/transaction.entity';
-import {
-  SubscriptionTier,
-  TransactionType,
-  TransactionCurrency,
-  TransactionProvider,
-  TransactionStatus,
-} from '../../common/enums';
+import { SubscriptionTier, TransactionType } from '../../common/enums';
 import { SUBSCRIPTION_PRICES } from '../../common/constants';
+import { PaymentService } from '../payment/payment.service';
+import { ObservabilityService } from '../observability/observability.service';
+import { ObservabilityEventName } from '../observability/observability-events';
 
 @Injectable()
 export class SubscriptionService {
@@ -23,6 +25,9 @@ export class SubscriptionService {
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
     private dataSource: DataSource,
+    private paymentService: PaymentService,
+    @Optional()
+    private observabilityService?: ObservabilityService,
   ) {}
 
   async getAllPlans(): Promise<SubscriptionPlan[]> {
@@ -38,44 +43,73 @@ export class SubscriptionService {
   async subscribeToPlan(
     userId: string,
     tier: SubscriptionTier,
-    currency: TransactionCurrency,
-    provider: TransactionProvider,
-    externalRef: string,
+    paymentTransactionId?: string,
   ): Promise<User> {
     const plan = await this.getPlanByTier(tier);
+    const expectedPrice = Number(SUBSCRIPTION_PRICES[tier] || 0);
+
+    let paymentTransaction: Transaction | undefined;
+    if (expectedPrice > 0) {
+      if (!paymentTransactionId) {
+        throw new BadRequestException(
+          'A verified payment transaction is required for paid plans',
+        );
+      }
+
+      paymentTransaction =
+        await this.paymentService.getCompletedTransactionForUse(
+          userId,
+          paymentTransactionId,
+          TransactionType.SUBSCRIPTION,
+        );
+
+      if (Number(paymentTransaction.amount) < expectedPrice) {
+        throw new BadRequestException(
+          'Payment amount is lower than the selected plan price',
+        );
+      }
+    }
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // Record the subscription transaction
-      await queryRunner.manager.save(Transaction, {
-        userId,
-        type: TransactionType.SUBSCRIPTION,
-        currency,
-        amount: SUBSCRIPTION_PRICES[tier],
-        provider,
-        status: TransactionStatus.COMPLETED,
-        externalRef,
-        metadata: { tier },
-      });
-
-      // Update user's subscription
       const expiresAt = new Date();
       expiresAt.setMonth(expiresAt.getMonth() + 1);
 
-      await queryRunner.manager.update(User, { id: userId }, {
-        subscriptionPlanId: plan.id,
-        subscriptionExpiresAt: expiresAt,
-      });
+      await queryRunner.manager.update(
+        User,
+        { id: userId },
+        {
+          subscriptionPlanId: plan.id,
+          subscriptionExpiresAt: expiresAt,
+        },
+      );
+
+      if (paymentTransaction) {
+        await queryRunner.manager.update(Transaction, paymentTransaction.id, {
+          metadata: {
+            ...(paymentTransaction.metadata || {}),
+            subscriptionActivatedAt: new Date().toISOString(),
+            subscriptionTier: tier,
+          },
+        });
+      }
 
       const user = await queryRunner.manager.findOne(User, {
         where: { id: userId },
         relations: ['subscriptionPlan'],
       });
 
+      if (!user) throw new NotFoundException('User not found');
+
       await queryRunner.commitTransaction();
+      void this.observabilityService?.track(
+        ObservabilityEventName.SUBSCRIPTION_STARTED,
+        userId,
+        { tier, paymentTransactionId },
+      );
       return user;
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -111,7 +145,11 @@ export class SubscriptionService {
         tierColor: '#C0C0C0',
         dailySwipeLimit: null,
         dailySuperLikes: 5,
-        features: ['Unlimited local swipes', '5 Super Likes/day', 'See who liked you'],
+        features: [
+          'Unlimited local swipes',
+          '5 Super Likes/day',
+          'See who liked you',
+        ],
         hasSmartMatchmaking: false,
         hasMarriageStaking: false,
         canSeeWhoLiked: true,
@@ -127,7 +165,12 @@ export class SubscriptionService {
         tierColor: '#FFD700',
         dailySwipeLimit: null,
         dailySuperLikes: 10,
-        features: ['Gold badge', 'Marriage Staking', 'Zero ads', 'Priority likes'],
+        features: [
+          'Gold badge',
+          'Marriage Staking',
+          'Zero ads',
+          'Priority likes',
+        ],
         hasSmartMatchmaking: false,
         hasMarriageStaking: true,
         canSeeWhoLiked: true,
@@ -161,7 +204,9 @@ export class SubscriptionService {
     ];
 
     for (const plan of plans) {
-      const exists = await this.planRepository.findOne({ where: { name: plan.name } });
+      const exists = await this.planRepository.findOne({
+        where: { name: plan.name },
+      });
       if (!exists) {
         await this.planRepository.save(plan);
       }

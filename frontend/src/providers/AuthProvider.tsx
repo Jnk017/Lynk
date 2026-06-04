@@ -1,6 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { api } from '../services/api';
-import { API_ENDPOINTS } from '../constants/api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { api } from "../services/api";
+import { API_ENDPOINTS } from "../constants/api";
+import { trackFrontendEvent } from "../services/observability";
 
 interface User {
   id: string;
@@ -67,30 +74,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = async (email: string, password: string) => {
-    const response = await api.post<{ user: User; accessToken: string; refreshToken: string }>(
-      API_ENDPOINTS.auth.login,
-      { email, password },
-    );
+    const response = await api.post<{
+      user: User;
+      accessToken: string;
+      refreshToken: string;
+    }>(API_ENDPOINTS.auth.login, { email, password });
     await api.saveTokens(response.accessToken, response.refreshToken);
     setUser(response.user);
   };
 
   const loginWithPi = async (accessToken: string) => {
-    const response = await api.post<{ user: User; accessToken: string; refreshToken: string }>(
-      API_ENDPOINTS.auth.loginPi,
-      { accessToken },
-    );
+    const response = await api.post<{
+      user: User;
+      accessToken: string;
+      refreshToken: string;
+    }>(API_ENDPOINTS.auth.loginPi, { accessToken });
     await api.saveTokens(response.accessToken, response.refreshToken);
     setUser(response.user);
   };
 
   const register = async (data: RegisterData) => {
-    const response = await api.post<{ user: User; accessToken: string; refreshToken: string }>(
-      API_ENDPOINTS.auth.register,
-      data,
-    );
+    const response = await api.post<{
+      user: User;
+      accessToken: string;
+      refreshToken: string;
+    }>(API_ENDPOINTS.auth.register, data);
     await api.saveTokens(response.accessToken, response.refreshToken);
     setUser(response.user);
+    void trackFrontendEvent("user_registered", response.user.id, {
+      method: data.email ? "email" : "phone",
+      hasReferral: Boolean(data.referralCode),
+    });
   };
 
   const logout = async () => {
@@ -123,6 +137,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 }

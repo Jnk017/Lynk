@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Optional,
   ForbiddenException,
   NotFoundException,
   BadRequestException,
@@ -13,6 +14,8 @@ import { Match } from '../matchmaking/entities/match.entity';
 import { AiService } from '../ai/ai.service';
 import { NotificationService } from '../notification/notification.service';
 import { MessageType, NotificationType } from '../../common/enums';
+import { ObservabilityService } from '../observability/observability.service';
+import { ObservabilityEventName } from '../observability/observability-events';
 
 @Injectable()
 export class ChatService {
@@ -27,14 +30,26 @@ export class ChatService {
     private matchRepository: Repository<Match>,
     private aiService: AiService,
     private notificationService: NotificationService,
+    @Optional()
+    private observabilityService?: ObservabilityService,
   ) {}
 
-  async getOrCreateRoomForMatch(matchId: string): Promise<ChatRoom> {
-    const existing = await this.chatRoomRepository.findOne({ where: { matchId } });
-    if (existing) return existing;
-
-    const match = await this.matchRepository.findOne({ where: { id: matchId } });
+  async getOrCreateRoomForMatch(
+    userId: string,
+    matchId: string,
+  ): Promise<ChatRoom> {
+    const match = await this.matchRepository.findOne({
+      where: { id: matchId },
+    });
     if (!match) throw new NotFoundException('Match not found');
+    if (match.initiatorId !== userId && match.receiverId !== userId) {
+      throw new ForbiddenException('You are not a participant in this match');
+    }
+
+    const existing = await this.chatRoomRepository.findOne({
+      where: { matchId },
+    });
+    if (existing) return existing;
 
     const room = await this.chatRoomRepository.save({
       matchId,
@@ -96,14 +111,23 @@ export class ChatService {
       isEphemeral,
     });
 
-    const preview = type === MessageType.TEXT ? content.substring(0, 60) : `[${type}]`;
+    void this.observabilityService?.track(
+      ObservabilityEventName.MESSAGE_SENT,
+      senderId,
+      { chatRoomId, messageId: message.id, type },
+    );
+
+    const preview =
+      type === MessageType.TEXT ? content.substring(0, 60) : `[${type}]`;
     await this.chatRoomRepository.update(chatRoomId, {
       lastMessageAt: new Date(),
       lastMessagePreview: preview,
     });
 
     // Push notification to all other participants
-    const participants = await this.participantRepository.find({ where: { chatRoomId } });
+    const participants = await this.participantRepository.find({
+      where: { chatRoomId },
+    });
     const others = participants.filter((p) => p.userId !== senderId);
 
     for (const p of others) {
@@ -136,13 +160,19 @@ export class ChatService {
       .getMany();
   }
 
-  async getSuggestedIceBreakers(userId: string, targetUserId: string): Promise<string[]> {
+  async getSuggestedIceBreakers(
+    userId: string,
+    targetUserId: string,
+  ): Promise<string[]> {
     return this.aiService.generateIceBreakers(userId, targetUserId);
   }
 
   async markRead(userId: string, chatRoomId: string): Promise<void> {
     await this.assertParticipant(userId, chatRoomId);
-    await this.participantRepository.update({ userId, chatRoomId }, { lastReadAt: new Date() });
+    await this.participantRepository.update(
+      { userId, chatRoomId },
+      { lastReadAt: new Date() },
+    );
     await this.messageRepository
       .createQueryBuilder()
       .update(Message)
@@ -153,10 +183,14 @@ export class ChatService {
       .execute();
   }
 
-  private async assertParticipant(userId: string, chatRoomId: string): Promise<void> {
+  private async assertParticipant(
+    userId: string,
+    chatRoomId: string,
+  ): Promise<void> {
     const participant = await this.participantRepository.findOne({
       where: { userId, chatRoomId },
     });
-    if (!participant) throw new ForbiddenException('You are not a participant in this chat');
+    if (!participant)
+      throw new ForbiddenException('You are not a participant in this chat');
   }
 }

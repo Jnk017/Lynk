@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { SubscriptionTier } from '../../../common/enums';
@@ -12,7 +13,12 @@ export class SubscriptionPlan {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: SubscriptionTier, unique: true })
+  @Column({
+    type: 'enum',
+    enum: SubscriptionTier,
+    enumName: 'subscription_tier_enum',
+    unique: true,
+  })
   name: SubscriptionTier;
 
   @Column()
@@ -62,4 +68,7 @@ export class SubscriptionPlan {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

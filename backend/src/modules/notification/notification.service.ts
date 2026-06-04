@@ -35,16 +35,23 @@ export class NotificationService {
         credential: admin.credential.cert({
           projectId,
           clientEmail: this.configService.get<string>('firebase.clientEmail'),
-          privateKey: this.configService.get<string>('firebase.privateKey')?.replace(/\\n/g, '\n'),
+          privateKey: this.configService
+            .get<string>('firebase.privateKey')
+            ?.replace(/\\n/g, '\n'),
         }),
       });
       this.firebaseInitialized = true;
-    } catch (err) {
-      this.logger.warn('Firebase initialization failed – push notifications disabled');
+    } catch {
+      this.logger.warn(
+        'Firebase initialization failed – push notifications disabled',
+      );
     }
   }
 
-  async sendToUser(userId: string, payload: NotificationPayload): Promise<void> {
+  async sendToUser(
+    userId: string,
+    payload: NotificationPayload,
+  ): Promise<void> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user?.fcmToken || !this.firebaseInitialized) return;
 
@@ -62,12 +69,17 @@ export class NotificationService {
         android: { priority: 'high' },
         apns: { payload: { aps: { sound: 'default', badge: 1 } } },
       });
-    } catch (err) {
-      this.logger.error(`Failed to send notification to user ${userId}: ${err}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send notification to user ${userId}: ${String(error)}`,
+      );
     }
   }
 
-  async sendToMultiple(userIds: string[], payload: NotificationPayload): Promise<void> {
+  async sendToMultiple(
+    userIds: string[],
+    payload: NotificationPayload,
+  ): Promise<void> {
     await Promise.allSettled(userIds.map((id) => this.sendToUser(id, payload)));
   }
 }
