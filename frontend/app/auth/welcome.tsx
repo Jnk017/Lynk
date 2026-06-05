@@ -6,6 +6,49 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Tag } from '../../src/components/premium';
 import { BORDER_RADIUS, COLORS, GRADIENTS, SHADOWS, SPACING, TYPOGRAPHY } from '../../src/constants/theme';
+import { NeonButton } from '../../src/components/ui/NeonButton';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING } from '../../src/constants/theme';
+
+const { width, height } = Dimensions.get('window');
+
+function AnimatedLogo() {
+  const pulse = useSharedValue(0);
+  const rotation = useSharedValue(0);
+
+  useEffect(() => {
+    pulse.value = withRepeat(withTiming(1, { duration: 2000 }), -1, true);
+    rotation.value = withRepeat(withTiming(360, { duration: 8000 }), -1, false);
+  }, []);
+
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: interpolate(pulse.value, [0, 1], [1, 1.05], Extrapolate.CLAMP),
+      },
+    ],
+    shadowOpacity: interpolate(pulse.value, [0, 1], [0.4, 0.8], Extrapolate.CLAMP),
+  }));
+
+  const orbitStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
+
+  return (
+    <View style={styles.logoContainer}>
+      <Animated.View style={[styles.orbitRing, orbitStyle]} />
+      <Animated.View style={[styles.logoCircle, logoStyle]}>
+        <LinearGradient
+          colors={GRADIENTS.gold}
+          style={styles.logoGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <Text style={styles.logoText}>∞</Text>
+        </LinearGradient>
+      </Animated.View>
+    </View>
+  );
+}
 
 export default function WelcomeScreen() {
   const fadeIn = useSharedValue(0);
@@ -19,6 +62,12 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={[...GRADIENTS.dark, COLORS.background]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Decorative ambient glows */}
       <View style={[styles.glow, styles.glowTop]} />
       <View style={[styles.glow, styles.glowBottom]} />
       <SafeAreaView style={styles.safeArea}>

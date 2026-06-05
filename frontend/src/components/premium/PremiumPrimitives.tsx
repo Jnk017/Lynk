@@ -77,6 +77,7 @@ function getButtonGradient(variant: ButtonVariant): [string, string, ...string[]
     case 'premiumGold': return [...theme.gradients.lynkGoldPremium];
     case 'secondary': return [theme.colors.secondaryPurple, theme.colors.premiumDarkPurple];
     case 'danger': return [theme.colors.danger, theme.colors.dangerDeep];
+    case 'danger': return [theme.colors.danger, '#9F1239'];
     case 'outline':
     case 'ghost': return ['transparent', 'transparent'];
     case 'primary':
@@ -115,6 +116,7 @@ export const GiftCard = (props: CardProps) => <Card {...props} variant="gift" />
 export const ChatCard = (props: CardProps) => <Card {...props} variant="chat" />;
 
 export function Avatar({ label, size = 56 }: { label: string; size?: number }) {
+export function Avatar({ label, size = 56, uri }: { label: string; size?: number; uri?: string }) {
   return (
     <LinearGradient accessibilityLabel={`${label} profile photo`} colors={theme.gradients.lynkGoldPremium} style={[styles.avatar, { width: size, height: size, borderRadius: size / 2 }]}> 
       <Text style={[styles.avatarText, { fontSize: Math.max(14, size * 0.38) }]}>{label.slice(0, 1).toUpperCase()}</Text>
@@ -208,6 +210,7 @@ const styles = StyleSheet.create({
   avatar: { alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: theme.colors.lightGold },
   avatarText: { color: theme.colors.premiumDarkPurple, fontWeight: '700' },
   badge: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: theme.radius.full, paddingHorizontal: theme.spacing[12], paddingVertical: theme.spacing[4], backgroundColor: theme.colors.surfaceSoft },
+  badge: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: theme.radius.full, paddingHorizontal: theme.spacing[12], paddingVertical: theme.spacing[4], backgroundColor: 'rgba(255,255,255,0.06)' },
   badgeText: { ...theme.typography.caption, fontWeight: '700' },
   fieldWrap: { gap: theme.spacing[8] },
   fieldLabel: { ...theme.typography.label, color: theme.colors.textSecondary, textTransform: 'uppercase' },

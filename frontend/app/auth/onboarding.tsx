@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,6 +42,7 @@ export default function OnboardingScreen() {
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <Entrance key={slide.word}>
+        <Entrance key={slide.word}>
           <View style={styles.content}>
             <View style={styles.illustration} accessibilityLabel={`${slide.word} premium illustration`}>
               <View style={styles.orbitOne} />
@@ -71,6 +73,7 @@ export default function OnboardingScreen() {
           </View>
           </Entrance>
         </ScrollView>
+        </Entrance>
 
         <View style={styles.footer}>
           <Button label={step === slides.length - 1 ? 'Create Account' : 'Continue'} variant="premiumGold" onPress={next} accessibilityHint="Moves to the next onboarding step" />
@@ -87,11 +90,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   safeArea: { flex: 1, paddingHorizontal: SPACING.xl, paddingTop: SPACING.md, gap: SPACING.md, alignSelf: 'center', width: '100%', maxWidth: 560 },
   scrollContent: { flexGrow: 1, paddingBottom: SPACING.md },
+  safeArea: { flex: 1, padding: SPACING.xl, gap: SPACING.md },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerButton: { minHeight: 44, justifyContent: 'center' },
   headerText: { ...TYPOGRAPHY.bodySecondary },
   stepText: { ...TYPOGRAPHY.label, color: COLORS.gold },
   content: { alignItems: 'center', gap: SPACING.md, paddingTop: SPACING.lg },
+  content: { alignItems: 'center', gap: SPACING.md, paddingTop: SPACING.xl },
   illustration: { width: 180, height: 180, borderRadius: BORDER_RADIUS.xxl, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.gold, ...SHADOWS.premium },
   orbitOne: { position: 'absolute', width: 138, height: 138, borderRadius: 69, borderWidth: 1, borderColor: COLORS.border, transform: [{ rotate: '24deg' }] },
   orbitTwo: { position: 'absolute', width: 110, height: 110, borderRadius: 55, borderWidth: 1, borderColor: COLORS.border, transform: [{ rotate: '-18deg' }] },

@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SPACING, TYPOGRAPHY, GRADIENTS, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 import { Button, Card, Divider, EmptyState, Tag } from './premium';
+import { Button, Card, Divider, EmptyState, ProgressBar, Tag } from './premium';
 
 interface PlaceholderScreenProps {
   title: string;
@@ -30,11 +31,16 @@ export function PlaceholderScreen({ title, description, todo, premiumPoints = ['
               <Tag label="Preview" tone="gold" />
               <Text style={styles.status}>Designed for trust</Text>
             </View>
+              <Tag label="Alpha ready shell" tone="gold" />
+              <Text style={styles.percent}>85%</Text>
+            </View>
+            <ProgressBar progress={0.85} label={`${title} design readiness`} />
             <Divider />
             {premiumPoints.map((point) => <Text key={point} style={styles.point}>✓ {point}</Text>)}
           </Card>
 
           <EmptyState title="A clear next step" description={todo} />
+          <EmptyState title="Provider integration intentionally deferred" description={todo} />
           <Button label="Return" variant="outline" onPress={() => router.back()} accessibilityHint="Returns to the previous Lynk screen" />
         </ScrollView>
       </SafeAreaView>
@@ -55,5 +61,6 @@ const styles = StyleSheet.create({
   card: { gap: SPACING.md },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   status: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
+  percent: { ...TYPOGRAPHY.h3, color: COLORS.gold },
   point: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
 });

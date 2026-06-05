@@ -25,6 +25,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
 import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS, BORDER_RADIUS } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/ui/GlassCard';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { PublicProfile, ProfileMedia } from '../../src/types/api';

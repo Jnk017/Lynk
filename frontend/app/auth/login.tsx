@@ -7,6 +7,9 @@ import { Button, Card, TextField } from '../../src/components/premium';
 import { useAuth } from '../../src/providers/AuthProvider';
 import { getErrorMessage } from '../../src/utils/errors';
 import { COLORS, GRADIENTS, SPACING, TYPOGRAPHY } from '../../src/constants/theme';
+import { NeonButton } from '../../src/components/ui/NeonButton';
+import { GlassCard } from '../../src/components/ui/GlassCard';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING } from '../../src/constants/theme';
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -39,6 +42,13 @@ export default function LoginScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()} style={styles.backButton}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+            <TouchableOpacity onPress={() => router.back()} style={styles.back}>
               <Text style={styles.backText}>← Back</Text>
             </Pressable>
 

@@ -15,6 +15,7 @@ import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
 import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING } from '../../src/constants/theme';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/premium';
+import { NeonButton } from '../../src/components/ui/NeonButton';
 import { ChatParticipant, ChatRoom } from '../../src/types/api';
 import { getErrorMessage } from '../../src/utils/errors';
 
