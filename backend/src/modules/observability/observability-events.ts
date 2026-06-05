@@ -10,6 +10,14 @@ export enum ObservabilityEventName {
   SUBSCRIPTION_STARTED = 'subscription_started',
   REFERRAL_COMPLETED = 'referral_completed',
   FOUNDER_JOINED = 'founder_joined',
+  REPORT_CREATED = 'report_created',
+  REPORT_SUBMITTED = 'report_submitted',
+  REPORT_RESOLVED = 'report_resolved',
+  REPORT_DISMISSED = 'report_dismissed',
+  USER_BLOCKED = 'user_blocked',
+  USER_UNBLOCKED = 'user_unblocked',
+  SAFETY_CENTER_OPENED = 'safety_center_opened',
+  VERIFICATION_REVIEWED = 'verification_reviewed',
 }
 
 export type ObservabilityProperties = Record<

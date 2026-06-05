@@ -16,7 +16,15 @@ export type FrontendObservabilityEvent =
   | "commitment_benefits_opened"
   | "proof_submission_started"
   | "proof_submission_completed"
-  | "milestone_viewed";
+  | "milestone_viewed"
+  | "report_created"
+  | "report_submitted"
+  | "report_resolved"
+  | "report_dismissed"
+  | "user_blocked"
+  | "user_unblocked"
+  | "safety_center_opened"
+  | "verification_reviewed";
 
 type EventProperties = Record<
   string,

@@ -21,6 +21,7 @@ import {
   NotificationType,
 } from '../../common/enums';
 import { SUBSCRIPTION_LIMITS, REDIS_KEYS } from '../../common/constants';
+import { ModerationService } from '../moderation/moderation.service';
 
 @Injectable()
 export class MatchmakingService {
@@ -34,6 +35,7 @@ export class MatchmakingService {
     @InjectRepository(MatchmakingSession)
     private sessionRepository: Repository<MatchmakingSession>,
     private notificationService: NotificationService,
+    private moderationService: ModerationService,
     private dataSource: DataSource,
     @InjectRedis() private redisClient: Redis,
   ) {}
@@ -43,6 +45,7 @@ export class MatchmakingService {
     swipedId: string,
     action: SwipeAction,
   ): Promise<{ matched: boolean; matchId?: string }> {
+    await this.moderationService.assertInteractionAllowed(swiperId, swipedId);
     const swiper = await this.userRepository.findOne({
       where: { id: swiperId },
       relations: ['subscriptionPlan'],
@@ -159,8 +162,10 @@ export class MatchmakingService {
       .where('s.swiperId = :userId', { userId })
       .getRawMany();
 
+    const blockedIds = await this.moderationService.blockedUserIdsFor(userId);
     const excludeIds = [
       userId,
+      ...blockedIds,
       ...alreadySwiped.map((s: { s_swipedId: string }) => s.s_swipedId),
     ];
 

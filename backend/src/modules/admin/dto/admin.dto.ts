@@ -9,9 +9,14 @@ import {
   IsString,
   Matches,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
-import { ReportStatus } from '../../../common/enums';
+import {
+  ReportReason,
+  ReportStatus,
+  VerificationStatus,
+} from '../../../common/enums';
 
 export class AdminListQueryDto {
   @IsOptional()
@@ -26,6 +31,33 @@ export class AdminListQueryDto {
   @Min(1)
   @Max(100)
   limit?: number = 20;
+}
+
+export class AdminUserQueryDto extends AdminListQueryDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+}
+
+export class AdminReportQueryDto extends AdminListQueryDto {
+  @IsOptional()
+  @IsEnum(ReportStatus)
+  status?: ReportStatus;
+
+  @IsOptional()
+  @IsEnum(ReportReason)
+  reason?: ReportReason;
+}
+
+export class ReviewVerificationDto {
+  @IsEnum(VerificationStatus)
+  status: VerificationStatus.VERIFIED | VerificationStatus.REJECTED;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
 }
 
 export class SuspendUserDto {

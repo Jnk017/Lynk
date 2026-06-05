@@ -130,6 +130,17 @@ export enum RevenueDistributionStatus {
   CANCELLED = 'cancelled',
 }
 
+export enum ReportReason {
+  FAKE_PROFILE = 'fake_profile',
+  SCAM_ATTEMPT = 'scam_attempt',
+  HARASSMENT = 'harassment',
+  INAPPROPRIATE_CONTENT = 'inappropriate_content',
+  IMPERSONATION = 'impersonation',
+  UNDERAGE_CONCERN = 'underage_concern',
+  SPAM = 'spam',
+  OTHER = 'other',
+}
+
 export enum ReportStatus {
   PENDING = 'pending',
   REVIEWING = 'reviewing',
