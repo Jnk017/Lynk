@@ -1,26 +1,26 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS } from '../../constants/theme';
+import { COLORS, GRADIENTS } from '../../constants/theme';
 
 const TIER_CONFIG = {
   bronze: {
-    colors: ['#CD7F32', '#8B4513'] as const,
+    colors: [COLORS.bronze, COLORS.gold] as const,
     label: 'Bronze',
     emoji: '🥉',
   },
   silver: {
-    colors: ['#C0C0C0', '#808080'] as const,
+    colors: [COLORS.silver, COLORS.textTertiary] as const,
     label: 'Silver',
     emoji: '⭐',
   },
   gold: {
-    colors: ['#FFD700', '#FFA500'] as const,
+    colors: [...GRADIENTS.gold] as const,
     label: 'Gold',
     emoji: '🌟',
   },
   platinum: {
-    colors: ['#E5E4E2', '#B0B0B0'] as const,
+    colors: [COLORS.platinum, COLORS.gold] as const,
     label: 'Global Elite',
     emoji: '💎',
   },
@@ -42,7 +42,7 @@ export function SubscriptionBadge({ tier, size = 'md' }: SubscriptionBadgeProps)
       style={[styles.badge, size === 'sm' && styles.badgeSm]}
     >
       <Text style={[styles.emoji, size === 'sm' && styles.emojiSm]}>{config.emoji}</Text>
-      <Text style={[styles.label, size === 'sm' && styles.labelSm, { color: tier === 'platinum' || tier === 'silver' ? '#0A0A0A' : '#fff' }]}>
+      <Text style={[styles.label, size === 'sm' && styles.labelSm, { color: tier === 'platinum' || tier === 'silver' ? COLORS.background : COLORS.textPrimary }]}>
         {config.label}
       </Text>
     </LinearGradient>

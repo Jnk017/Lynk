@@ -16,7 +16,7 @@ import { useAuth } from '../../src/providers/AuthProvider';
 import { getErrorMessage } from '../../src/utils/errors';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { GlassCard } from '../../src/components/ui/GlassCard';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING } from '../../src/constants/theme';
 
 export default function RegisterScreen() {
   const { register } = useAuth();
@@ -66,7 +66,7 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">

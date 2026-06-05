@@ -23,7 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/ui/GlassCard';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { PublicProfile, ProfileMedia } from '../../src/types/api';
@@ -197,7 +197,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>

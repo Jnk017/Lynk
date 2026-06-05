@@ -17,7 +17,7 @@ import { GlassCard } from '../../src/components/ui/GlassCard';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { ReferralStats, RevenueDistribution, RevenuePool } from '../../src/types/api';
 import { getErrorMessage } from '../../src/utils/errors';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS } from '../../src/constants/theme';
 
 interface ReferralDashboardStats extends ReferralStats {
   totalReferrals?: number;
@@ -73,7 +73,7 @@ export default function ReferralScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -134,7 +134,7 @@ export default function ReferralScreen() {
             {shareError ? <Text style={styles.errorText}>{shareError}</Text> : null}
             <TouchableOpacity style={styles.shareBtn} onPress={shareReferral}>
               <LinearGradient
-                colors={[COLORS.primaryViolet, COLORS.electricBlue]}
+                colors={GRADIENTS.gold}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.shareGradient}
