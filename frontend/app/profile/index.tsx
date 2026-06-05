@@ -1,191 +1,91 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import { Href, router } from 'expo-router';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Avatar, Button, Entrance, ErrorState, LoadingState } from '../../src/components/premium';
+import { theme } from '../../src/design-system';
+import { calculateProfileCompletion, getDetailValues } from '../../src/features/profile/completion';
+import { CompletionCard, InsightsCard, ProfileSectionCard, TrustBadgeRow, VerificationSummary } from '../../src/features/profile/ProfileExperience';
+import { useProfile } from '../../src/features/profile/useProfile';
+import { getVerificationLevels } from '../../src/features/profile/verification';
 import { useAuth } from '../../src/providers/AuthProvider';
-import { GlassCard } from '../../src/components/ui/GlassCard';
-import { NeonButton } from '../../src/components/ui/NeonButton';
-import { FounderRankBadge } from '../../src/components/ui/FounderBadge';
-import { SubscriptionBadge } from '../../src/components/ui/SubscriptionBadge';
-import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS } from '../../src/constants/theme';
-import { SubscriptionTier } from '../../src/types/api';
-
-const PROFILE_MENU_ITEMS: Array<{ icon: string; label: string; route: Href }> = [
-  { icon: '🛡️', label: 'Verification & KYC', route: '/profile/verification' },
-  { icon: '💎', label: 'Subscription & Plans', route: '/shop/subscription' },
-  { icon: '🎁', label: 'Gift Store', route: '/shop/gifts' },
-  { icon: '💍', label: 'Marriage Stake', route: '/profile/marriage' },
-  { icon: '🤝', label: 'Anti-Ghosting Staking', route: '/profile/staking' },
-  { icon: '⚙️', label: 'Settings', route: '/profile/settings' },
-];
-
-function isSubscriptionTier(tier: string): tier is SubscriptionTier {
-  return ['bronze', 'silver', 'gold', 'platinum'].includes(tier);
-}
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const { data: profile, isLoading, isError, refetch } = useProfile();
+  if (isLoading) return <ScreenShell><LoadingState label="Preparing your profile" /></ScreenShell>;
+  if (isError || !profile) return <ScreenShell><ErrorState title="We could not load your profile" description="Your information is safe. Please try again." onRetry={() => void refetch()} /></ScreenShell>;
 
-  if (!user) return null;
-
-  const tierBadgeStyle = user.subscriptionPlan
-    ? { borderColor: user.subscriptionPlan.tierColor }
-    : {};
+  const completion = calculateProfileCompletion(profile);
+  const levels = getVerificationLevels(profile);
+  const verificationProgress = levels.filter((level) => level.state === 'approved').length * 20;
+  const trustScore = Math.round(Number(profile.trustScore ?? 0));
+  const seriousnessScore = Math.round(completion.percentage * 0.6 + trustScore * 0.4);
+  const photo = profile.media?.find((item) => item.type === 'photo')?.url;
+  const details = (category: Parameters<typeof getDetailValues>[1]) => getDetailValues(profile, category).join(' · ');
+  const edit = () => router.push('/profile/edit');
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
-
-      {/* Decorative ambient glow */}
-      <View style={[styles.glow]} />
-
-      <SafeAreaView style={{ flex: 1 }}>
+    <ScreenShell>
+      <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>My Profile</Text>
-          <TouchableOpacity onPress={() => router.push('/profile/edit')}>
-            <Text style={styles.editText}>Edit</Text>
-          </TouchableOpacity>
+          <Pressable accessibilityRole="button" accessibilityLabel="Go back" accessibilityHint="Returns to the previous screen" onPress={() => router.back()} style={styles.headerAction}><Text style={styles.headerIcon}>‹</Text></Pressable>
+          <View style={styles.headerTitleWrap}><Text style={styles.headerEyebrow}>YOUR LYNK IDENTITY</Text><Text style={styles.headerTitle}>Profile</Text></View>
+          <Pressable accessibilityRole="button" accessibilityLabel="Edit profile" accessibilityHint="Opens the profile editor" onPress={edit} style={styles.headerAction}><Text style={styles.editText}>Edit</Text></Pressable>
         </View>
-
-        <ScrollView contentContainerStyle={styles.scroll}>
-          {/* Avatar + name */}
-          <View style={styles.avatarSection}>
-            <View style={[styles.avatarBorder, tierBadgeStyle]}>
-              <LinearGradient
-                colors={GRADIENTS.gold}
-                style={styles.avatar}
-              >
-                <Text style={styles.avatarInitial}>{user.displayName?.[0]?.toUpperCase()}</Text>
-              </LinearGradient>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Entrance>
+            <View style={styles.identity}>
+              {photo ? <Image source={{ uri: photo }} style={styles.avatarImage} accessibilityLabel={`${profile.displayName ?? 'Your'} profile photo`} /> : <Avatar label={profile.displayName ?? 'Lynk member'} size={96} />}
+              <Text style={styles.displayName}>{profile.displayName ?? 'Complete your name'}</Text>
+              {profile.location?.city || profile.location?.country ? <Text style={styles.location}>{[profile.location.city, profile.location.country].filter(Boolean).join(', ')}</Text> : <Text style={styles.location}>Add a location to meet people nearby</Text>}
+              <TrustBadgeRow profile={profile} completion={completion} />
             </View>
+          </Entrance>
 
-            <Text style={styles.displayName}>{user.displayName}</Text>
-
-            <View style={styles.badgesRow}>
-              {user.isFounder && user.founderRank && (
-                <FounderRankBadge rank={user.founderRank} />
-              )}
-              {user.subscriptionPlan && (
-                <SubscriptionBadge tier={isSubscriptionTier(user.subscriptionPlan.name) ? user.subscriptionPlan.name : 'bronze'} />
-              )}
-              {user.verificationStatus === 'verified' && (
-                <View style={styles.verifiedBadge}>
-                  <Text style={styles.verifiedText}>✓ Verified</Text>
-                </View>
-              )}
-            </View>
+          <View style={styles.scoreRow} accessibilityLabel={`Relationship seriousness score ${seriousnessScore}. Trust score ${trustScore}.`}>
+            <View style={styles.scoreItem}><Text style={styles.scoreValue}>{seriousnessScore}</Text><Text style={styles.scoreLabel}>Seriousness</Text></View>
+            <View style={styles.scoreDivider} />
+            <View style={styles.scoreItem}><Text style={styles.scoreValue}>{trustScore}</Text><Text style={styles.scoreLabel}>Trust</Text></View>
+            <View style={styles.scoreDivider} />
+            <View style={styles.scoreItem}><Text style={styles.scoreValue}>{completion.percentage}%</Text><Text style={styles.scoreLabel}>Complete</Text></View>
           </View>
 
-          {/* Stats */}
-          <GlassCard style={styles.statsCard}>
-            <View style={styles.statsRow}>
-              <View style={styles.stat}>
-                <Text style={styles.statNumber}>{Math.round(Number(user.trustScore))}</Text>
-                <Text style={styles.statLabel}>Trust Score</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.stat}>
-                <Text style={styles.statNumber}>{Number(user.piBalance).toFixed(2)}</Text>
-                <Text style={styles.statLabel}>Pi Balance</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.stat}>
-                <Text style={styles.statNumber}>${Number(user.fiatBalance).toFixed(2)}</Text>
-                <Text style={styles.statLabel}>Fiat Balance</Text>
-              </View>
-            </View>
-          </GlassCard>
+          <CompletionCard completion={completion} onAction={edit} />
+          <VerificationSummary progress={verificationProgress} status={verificationProgress === 100 ? 'Verified' : profile.kycDocumentUrl ? 'Review in progress' : 'Build your trust level'} onPress={() => router.push('/profile/verification')} />
+          <InsightsCard completion={completion} verified={profile.verificationStatus === 'verified'} />
 
-          {/* Founder section */}
-          {user.isFounder && (
-            <GlassCard style={[styles.founderCard, SHADOWS.goldGlow]}>
-              <View style={styles.founderHeader}>
-                <Text style={styles.founderIcon}>👑</Text>
-                <View>
-                  <Text style={styles.founderTitle}>Founder #{user.founderRank}</Text>
-                  <Text style={styles.founderSubtitle}>
-                    {user.isRevenueSharingActive
-                      ? '✅ Revenue Sharing Active'
-                      : '⏳ Refer 5 verified users to activate'}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.referralBtn}
-                onPress={() => router.push('/referral')}
-              >
-                <Text style={styles.referralBtnText}>View Referral Stats →</Text>
-              </TouchableOpacity>
-            </GlassCard>
-          )}
+          <View style={styles.sectionHeader}><Text style={styles.sectionEyebrow}>YOUR STORY</Text><Text style={styles.sectionHeading}>Profile details</Text></View>
+          <View style={styles.sectionGrid}>
+            <ProfileSectionCard title="Photos" value={profile.media?.filter((item) => item.type === 'photo').length ? `${profile.media.filter((item) => item.type === 'photo').length} photo${profile.media.filter((item) => item.type === 'photo').length === 1 ? '' : 's'}` : undefined} emptyText="Let people see the person behind your story." icon="◉" actionLabel="Add a photo" onPress={edit} />
+            <ProfileSectionCard title="About me" value={profile.bio} emptyText="A warm introduction helps meaningful people connect." icon="✦" onPress={edit} />
+            <ProfileSectionCard title="Interests" value={details('interests')} emptyText="Shared interests make first conversations easier." icon="♡" onPress={edit} />
+            <ProfileSectionCard title="Values" value={details('values')} emptyText="Share what grounds your decisions and relationships." icon="◇" onPress={edit} />
+            <ProfileSectionCard title="Relationship goals" value={details('relationshipGoals')} emptyText="Clarity creates better, more intentional matches." icon="∞" onPress={edit} />
+            <ProfileSectionCard title="Lifestyle" value={details('lifestyle')} emptyText="Offer a glimpse into your everyday rhythm." icon="☼" onPress={edit} />
+            <ProfileSectionCard title="Languages" value={details('languages')} emptyText="Show how you connect across cultures." icon="◎" onPress={edit} />
+            <ProfileSectionCard title="Education" value={details('education')} emptyText="Add the learning experiences that shaped you." icon="△" onPress={edit} />
+            <ProfileSectionCard title="Occupation" value={details('occupation')} emptyText="Share the work or purpose that energizes you." icon="□" onPress={edit} />
+          </View>
 
-          {/* Menu items */}
-          {PROFILE_MENU_ITEMS.map((item) => (
-            <TouchableOpacity
-              key={item.label}
-              style={styles.menuItem}
-              onPress={() => router.push(item.route)}
-            >
-              <Text style={styles.menuIcon}>{item.icon}</Text>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Text style={styles.menuArrow}>→</Text>
-            </TouchableOpacity>
-          ))}
-
-          <NeonButton
-            label="Sign Out"
-            onPress={logout}
-            variant="outline"
-            style={{ marginTop: SPACING.xl, marginBottom: SPACING.lg }}
-          />
+          <View style={styles.sectionHeader}><Text style={styles.sectionEyebrow}>ACCOUNT</Text><Text style={styles.sectionHeading}>Community & preferences</Text></View>
+          <View style={styles.sectionGrid}>
+            <ProfileSectionCard title="Verification" value={profile.verificationStatus === 'verified' ? 'Identity and selfie verified' : profile.kycDocumentUrl ? 'Identity review pending' : undefined} emptyText="Strengthen trust across the Lynk community." icon="✓" onPress={() => router.push('/profile/verification')} />
+            <ProfileSectionCard title="Referral" value={profile.isFounder && profile.founderRank ? `Founder #${profile.founderRank}` : 'Invite people who share your intentions'} emptyText="Grow a thoughtful relationship community." icon="⌁" onPress={() => router.push('/referral')} />
+            <ProfileSectionCard title="Settings" value="Privacy, discovery and account preferences" emptyText="Manage your experience." icon="⚙" onPress={() => router.push('/profile/settings')} />
+          </View>
+          <Button label="Sign out" variant="ghost" onPress={() => void logout()} accessibilityHint="Signs you out of Lynk on this device" />
         </ScrollView>
       </SafeAreaView>
-    </View>
+    </ScreenShell>
   );
 }
 
+function ScreenShell({ children }: { children: React.ReactNode }) {
+  return <View style={styles.container}><LinearGradient colors={theme.gradients.lynkDarkLuxuryGradient} style={StyleSheet.absoluteFill} /><View style={styles.glowTop} /><View style={styles.glowBottom} />{children}</View>;
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  glow: { position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: 100, backgroundColor: COLORS.primaryViolet, opacity: 0.08 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md },
-  backText: { color: COLORS.textSecondary, fontSize: 20 },
-  title: { ...TYPOGRAPHY.h4 },
-  editText: { color: COLORS.electricBlue, fontSize: 16 },
-  scroll: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxl, gap: SPACING.md },
-  avatarSection: { alignItems: 'center', paddingVertical: SPACING.xl, gap: SPACING.md },
-  avatarBorder: { padding: 3, borderRadius: 60, borderWidth: 2, borderColor: COLORS.glassBorder },
-  avatar: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { fontSize: 42, color: '#fff', fontWeight: '700' },
-  displayName: { ...TYPOGRAPHY.h2 },
-  badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, justifyContent: 'center' },
-  verifiedBadge: { backgroundColor: COLORS.electricBlue, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  verifiedText: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  statsCard: { marginBottom: SPACING.sm },
-  statsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
-  stat: { alignItems: 'center', flex: 1 },
-  statNumber: { fontSize: 20, fontWeight: '800', color: COLORS.gold },
-  statLabel: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  statDivider: { width: 1, height: 30, backgroundColor: COLORS.glassBorder },
-  founderCard: { backgroundColor: 'rgba(255,215,0,0.05)', borderColor: 'rgba(255,215,0,0.3)' },
-  founderHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.md },
-  founderIcon: { fontSize: 36 },
-  founderTitle: { fontSize: 18, fontWeight: '800', color: COLORS.gold },
-  founderSubtitle: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
-  referralBtn: { alignSelf: 'flex-start' },
-  referralBtnText: { color: COLORS.electricBlue, fontWeight: '600', fontSize: 14 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.md, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder, gap: SPACING.md },
-  menuIcon: { fontSize: 22, width: 30 },
-  menuLabel: { ...TYPOGRAPHY.body, flex: 1 },
-  menuArrow: { color: COLORS.textTertiary, fontSize: 16 },
+  container: { flex: 1, backgroundColor: theme.colors.background }, safeArea: { flex: 1 }, glowTop: { position: 'absolute', top: -theme.spacing[64], right: -theme.spacing[48], width: theme.spacing[64] * 3, height: theme.spacing[64] * 3, borderRadius: theme.radius.full, backgroundColor: theme.colors.secondaryPurple, opacity: 0.18 }, glowBottom: { position: 'absolute', bottom: theme.spacing[64], left: -theme.spacing[64], width: theme.spacing[64] * 2, height: theme.spacing[64] * 2, borderRadius: theme.radius.full, backgroundColor: theme.colors.deepGold, opacity: 0.08 }, header: { minHeight: theme.spacing[64], paddingHorizontal: theme.spacing[16], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, headerAction: { minWidth: theme.spacing[48], minHeight: theme.spacing[48], justifyContent: 'center' }, headerIcon: { ...theme.typography.headingL, color: theme.colors.textPrimary }, editText: { ...theme.typography.label, color: theme.colors.lightGold, textAlign: 'right' }, headerTitleWrap: { alignItems: 'center' }, headerEyebrow: { ...theme.typography.caption, color: theme.colors.textTertiary }, headerTitle: { ...theme.typography.headingM, color: theme.colors.textPrimary }, content: { paddingHorizontal: theme.spacing[16], paddingBottom: theme.spacing[48], gap: theme.spacing[16] }, identity: { alignItems: 'center', gap: theme.spacing[8], paddingVertical: theme.spacing[16] }, avatarImage: { width: 96, height: 96, borderRadius: theme.radius.full, borderWidth: 2, borderColor: theme.colors.lightGold }, displayName: { ...theme.typography.headingL, color: theme.colors.textPrimary, textAlign: 'center' }, location: { ...theme.typography.bodySmall, color: theme.colors.textSecondary, textAlign: 'center' }, scoreRow: { flexDirection: 'row', paddingVertical: theme.spacing[16], borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme.colors.borderSubtle }, scoreItem: { flex: 1, alignItems: 'center' }, scoreValue: { ...theme.typography.headingM, color: theme.colors.lightGold }, scoreLabel: { ...theme.typography.caption, color: theme.colors.textSecondary, marginTop: theme.spacing[4] }, scoreDivider: { width: 1, backgroundColor: theme.colors.borderSubtle }, sectionHeader: { marginTop: theme.spacing[16] }, sectionEyebrow: { ...theme.typography.caption, color: theme.colors.lightGold }, sectionHeading: { ...theme.typography.headingM, color: theme.colors.textPrimary, marginTop: theme.spacing[4] }, sectionGrid: { gap: theme.spacing[12] },
 });

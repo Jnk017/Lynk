@@ -14,6 +14,10 @@ export const API_ENDPOINTS = {
     updateMe: '/users/me',
     publicProfile: (id: string) => `/users/${id}/profile`,
   },
+  verification: {
+    kyc: '/verification/kyc',
+    liveness: '/verification/liveness',
+  },
   profile: {
     uploadPhoto: '/profile/media/photo',
     uploadVideo: '/profile/media/video',
