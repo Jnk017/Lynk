@@ -16,6 +16,7 @@ import { NotificationService } from '../notification/notification.service';
 import { MessageType, NotificationType } from '../../common/enums';
 import { ObservabilityService } from '../observability/observability.service';
 import { ObservabilityEventName } from '../observability/observability-events';
+import { ModerationService } from '../moderation/moderation.service';
 
 @Injectable()
 export class ChatService {
@@ -30,6 +31,7 @@ export class ChatService {
     private matchRepository: Repository<Match>,
     private aiService: AiService,
     private notificationService: NotificationService,
+    private moderationService: ModerationService,
     @Optional()
     private observabilityService?: ObservabilityService,
   ) {}
@@ -45,6 +47,10 @@ export class ChatService {
     if (match.initiatorId !== userId && match.receiverId !== userId) {
       throw new ForbiddenException('You are not a participant in this match');
     }
+
+    const otherUserId =
+      match.initiatorId === userId ? match.receiverId : match.initiatorId;
+    await this.moderationService.assertInteractionAllowed(userId, otherUserId);
 
     const existing = await this.chatRoomRepository.findOne({
       where: { matchId },
@@ -72,7 +78,10 @@ export class ChatService {
     const roomIds = participantRows.map((p) => p.chatRoomId);
     if (!roomIds.length) return [];
 
-    return this.chatRoomRepository
+    const blockedIds = new Set(
+      await this.moderationService.blockedUserIdsFor(userId),
+    );
+    const rooms = await this.chatRoomRepository
       .createQueryBuilder('room')
       .leftJoinAndSelect('room.participants', 'participants')
       .leftJoinAndSelect('participants.user', 'user')
@@ -80,6 +89,12 @@ export class ChatService {
       .whereInIds(roomIds)
       .orderBy('room.lastMessageAt', 'DESC')
       .getMany();
+    return rooms.filter(
+      (room) =>
+        !room.participants.some((participant) =>
+          blockedIds.has(participant.userId),
+        ),
+    );
   }
 
   async sendMessage(
@@ -91,6 +106,17 @@ export class ChatService {
     isEphemeral = false,
   ): Promise<Message> {
     await this.assertParticipant(senderId, chatRoomId);
+    const participants = await this.participantRepository.find({
+      where: { chatRoomId },
+    });
+    const recipient = participants.find(
+      (participant) => participant.userId !== senderId,
+    );
+    if (recipient)
+      await this.moderationService.assertInteractionAllowed(
+        senderId,
+        recipient.userId,
+      );
 
     /**
      * AI moderation: detect explicit or toxic content before saving.
@@ -126,9 +152,6 @@ export class ChatService {
     });
 
     // Push notification to all other participants
-    const participants = await this.participantRepository.find({
-      where: { chatRoomId },
-    });
     const others = participants.filter((p) => p.userId !== senderId);
 
     for (const p of others) {
@@ -150,6 +173,17 @@ export class ChatService {
     limit = 50,
   ): Promise<Message[]> {
     await this.assertParticipant(userId, chatRoomId);
+    const participants = await this.participantRepository.find({
+      where: { chatRoomId },
+    });
+    const other = participants.find(
+      (participant) => participant.userId !== userId,
+    );
+    if (other)
+      await this.moderationService.assertInteractionAllowed(
+        userId,
+        other.userId,
+      );
 
     return this.messageRepository
       .createQueryBuilder('msg')

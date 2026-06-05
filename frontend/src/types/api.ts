@@ -83,3 +83,10 @@ export interface RevenueDistribution {
   status: string;
   paidAt?: string;
 }
+
+
+export type ReportReason = 'fake_profile' | 'scam_attempt' | 'harassment' | 'inappropriate_content' | 'impersonation' | 'underage_concern' | 'spam' | 'other';
+export type ReportStatus = 'pending' | 'reviewing' | 'resolved' | 'dismissed';
+export interface CreateReportInput { reportedUserId: string; reason: ReportReason; details?: string; evidenceNote?: string; }
+export interface SafetyReport { id: string; reportedUserId: string; reason: ReportReason; status: ReportStatus; resolutionNote?: string | null; createdAt: string; updatedAt: string; }
+export interface BlockedMember { id: string; blockedUserId: string; createdAt: string; blockedUser?: Pick<PublicProfile, 'id' | 'displayName' | 'media'>; }

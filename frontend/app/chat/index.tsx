@@ -33,7 +33,10 @@ export default function ChatListScreen() {
     return (
       <TouchableOpacity
         style={styles.roomItem}
-        onPress={() => router.push(`/chat/${item.id}`)}
+        accessibilityRole="button"
+        accessibilityLabel={`Open conversation with ${name}`}
+        accessibilityHint="Opens messages and member safety actions"
+        onPress={() => router.push({ pathname: `/chat/${item.id}`, params: { targetUserId: otherParticipant?.userId, targetName: name } })}
       >
         <View style={styles.avatarContainer}>
           {photo ? (

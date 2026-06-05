@@ -13,6 +13,7 @@ import { AiService } from '../ai/ai.service';
 import { NotificationService } from '../notification/notification.service';
 import { MessageType } from '../../common/enums';
 import { ObservabilityService } from '../observability/observability.service';
+import { ModerationService } from '../moderation/moderation.service';
 
 interface RepositoryMock<T extends object> {
   findOne: jest.Mock<Promise<T | null>, [unknown]>;
@@ -50,6 +51,10 @@ function createService() {
   const notificationService = {
     sendToUser: jest.fn<Promise<void>, [string, unknown]>().mockResolvedValue(),
   };
+  const moderationService = {
+    assertInteractionAllowed: jest.fn().mockResolvedValue(undefined),
+    blockedUserIdsFor: jest.fn().mockResolvedValue([]),
+  };
   const observabilityService = {
     track: jest
       .fn<Promise<void>, [unknown, string, Record<string, unknown>?]>()
@@ -63,6 +68,7 @@ function createService() {
     matchRepository as unknown as Repository<Match>,
     aiService as unknown as AiService,
     notificationService as unknown as NotificationService,
+    moderationService as unknown as ModerationService,
     observabilityService as unknown as ObservabilityService,
   );
 
@@ -74,6 +80,7 @@ function createService() {
     matchRepository,
     aiService,
     notificationService,
+    moderationService,
     observabilityService,
   };
 }

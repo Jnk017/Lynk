@@ -12,6 +12,7 @@ import { Match } from '../matchmaking/entities/match.entity';
 import { User } from '../user/entities/user.entity';
 import { AiModule } from '../ai/ai.module';
 import { NotificationModule } from '../notification/notification.module';
+import { ModerationModule } from '../moderation/moderation.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { NotificationModule } from '../notification/notification.module';
     }),
     AiModule,
     NotificationModule,
+    ModerationModule,
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],

@@ -17,6 +17,9 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { AdminService } from './admin.service';
 import {
   AdminListQueryDto,
+  AdminReportQueryDto,
+  AdminUserQueryDto,
+  ReviewVerificationDto,
   ResolveReportDto,
   RevenueDryRunDto,
   SuspendUserDto,
@@ -38,7 +41,7 @@ export class AdminController {
   @Get('users')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Admin: list users' })
-  listUsers(@Query() query: AdminListQueryDto) {
+  listUsers(@Query() query: AdminUserQueryDto) {
     return this.adminService.listUsers(query);
   }
 
@@ -70,8 +73,38 @@ export class AdminController {
   @Get('reports')
   @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Admin: list reports' })
-  listReports(@Query() query: AdminListQueryDto) {
+  listReports(@Query() query: AdminReportQueryDto) {
     return this.adminService.listReports(query);
+  }
+
+  @Patch('reports/:id/review')
+  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: move report under review' })
+  reviewReport(@Request() req: AdminRequest, @Param('id') reportId: string) {
+    return this.adminService.reviewReport(req.user, reportId);
+  }
+
+  @Get('verifications')
+  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: list pending verification requests' })
+  listVerificationQueue(@Query() query: AdminListQueryDto) {
+    return this.adminService.listVerificationQueue(query);
+  }
+
+  @Patch('verifications/:userId/review')
+  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: review a verification request' })
+  reviewVerification(
+    @Request() req: AdminRequest,
+    @Param('userId') userId: string,
+    @Body() dto: ReviewVerificationDto,
+  ) {
+    return this.adminService.reviewVerification(
+      req.user,
+      userId,
+      dto.status,
+      dto.note,
+    );
   }
 
   @Patch('reports/:id/resolve')

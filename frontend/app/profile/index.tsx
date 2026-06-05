@@ -19,6 +19,7 @@ import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS } from '../../src/const
 import { SubscriptionTier } from '../../src/types/api';
 
 const PROFILE_MENU_ITEMS: Array<{ icon: string; label: string; route: Href }> = [
+  { icon: '♡', label: 'Safety Center', route: '/safety' },
   { icon: '🛡️', label: 'Verification & KYC', route: '/profile/verification' },
   { icon: '💎', label: 'Subscription & Plans', route: '/shop/subscription' },
   { icon: '🎁', label: 'Gift Store', route: '/shop/gifts' },
@@ -79,6 +80,11 @@ export default function ProfileScreen() {
               {user.subscriptionPlan && (
                 <SubscriptionBadge tier={isSubscriptionTier(user.subscriptionPlan.name) ? user.subscriptionPlan.name : 'bronze'} />
               )}
+              {user.isProfileComplete && (
+                <View accessibilityRole="text" accessibilityLabel="Profile complete" style={styles.completeBadge}>
+                  <Text style={styles.completeText}>◇ Profile Complete</Text>
+                </View>
+              )}
               {user.verificationStatus === 'verified' && (
                 <View style={styles.verifiedBadge}>
                   <Text style={styles.verifiedText}>✓ Verified</Text>
@@ -134,6 +140,9 @@ export default function ProfileScreen() {
           {PROFILE_MENU_ITEMS.map((item) => (
             <TouchableOpacity
               key={item.label}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+              accessibilityHint={`Opens ${item.label}`}
               style={styles.menuItem}
               onPress={() => router.push(item.route)}
             >
@@ -169,6 +178,8 @@ const styles = StyleSheet.create({
   avatarInitial: { fontSize: 42, color: '#fff', fontWeight: '700' },
   displayName: { ...TYPOGRAPHY.h2 },
   badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, justifyContent: 'center' },
+  completeBadge: { backgroundColor: 'rgba(212,166,58,0.14)', borderWidth: 1, borderColor: COLORS.gold, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  completeText: { color: COLORS.gold, fontSize: 12, fontWeight: '700' },
   verifiedBadge: { backgroundColor: COLORS.electricBlue, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
   verifiedText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   statsCard: { marginBottom: SPACING.sm },
