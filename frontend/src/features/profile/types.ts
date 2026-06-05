@@ -1,4 +1,5 @@
-import { ProfileMedia, SubscriptionPlan } from '../../types/api';
+import type { ProfileMedia, SubscriptionPlan } from '../../types/api';
+import type { DateCommitmentSnapshot, MarriageCommitmentSnapshot } from '../commitment/types';
 
 export type ProfileDetailCategory =
   | 'interests'
@@ -34,6 +35,8 @@ export interface LynkProfile {
   isFounder?: boolean;
   founderRank?: number;
   subscriptionPlan?: SubscriptionPlan;
+  marriageCommitment?: MarriageCommitmentSnapshot;
+  dateCommitments?: DateCommitmentSnapshot[];
 }
 
 export interface ProfileSectionDefinition {

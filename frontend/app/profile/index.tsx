@@ -71,6 +71,8 @@ export default function ProfileScreen() {
 
           <View style={styles.sectionHeader}><Text style={styles.sectionEyebrow}>ACCOUNT</Text><Text style={styles.sectionHeading}>Community & preferences</Text></View>
           <View style={styles.sectionGrid}>
+            <ProfileSectionCard title="Commitment Center" value={profile.marriageCommitment ? 'Your shared marriage journey' : undefined} emptyText="Explore a clear path toward shared commitment." icon="♡" onPress={() => router.push('/profile/marriage')} />
+            <ProfileSectionCard title="Commitment Wallet" value={profile.dateCommitments?.length ? `${profile.dateCommitments.length} relationship commitment${profile.dateCommitments.length === 1 ? '' : 's'}` : undefined} emptyText="View shared commitments and relationship milestones." icon="◇" onPress={() => router.push('/profile/staking')} />
             <ProfileSectionCard title="Verification" value={profile.verificationStatus === 'verified' ? 'Identity and selfie verified' : profile.kycDocumentUrl ? 'Identity review pending' : undefined} emptyText="Strengthen trust across the Lynk community." icon="✓" onPress={() => router.push('/profile/verification')} />
             <ProfileSectionCard title="Referral" value={profile.isFounder && profile.founderRank ? `Founder #${profile.founderRank}` : 'Invite people who share your intentions'} emptyText="Grow a thoughtful relationship community." icon="⌁" onPress={() => router.push('/referral')} />
             <ProfileSectionCard title="Settings" value="Privacy, discovery and account preferences" emptyText="Manage your experience." icon="⚙" onPress={() => router.push('/profile/settings')} />
