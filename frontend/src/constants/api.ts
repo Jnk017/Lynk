@@ -8,6 +8,10 @@ export const API_ENDPOINTS = {
     loginPi: '/auth/pi',
     refresh: '/auth/refresh',
     me: '/auth/me',
+    logoutAll: '/auth/logout-all',
+    changePassword: '/auth/change-password',
+    sessions: '/auth/sessions',
+    revokeSession: (id: string) => `/auth/sessions/${id}/revoke`,
   },
   users: {
     me: '/users/me',
@@ -42,6 +46,28 @@ export const API_ENDPOINTS = {
     plans: '/subscription/plans',
     subscribe: '/subscription/subscribe',
   },
+  verification: {
+    liveness: '/verification/liveness',
+    kyc: '/verification/kyc',
+  },
+  moderation: {
+    reports: '/moderation/reports',
+    myReports: '/moderation/reports/me',
+  },
+  featureFlags: {
+    public: '/feature-flags/public',
+  },
+  admin: {
+    users: '/admin/users',
+    user: (id: string) => `/admin/users/${id}`,
+    suspend: (id: string) => `/admin/users/${id}/suspend`,
+    restore: (id: string) => `/admin/users/${id}/restore`,
+    reports: '/admin/reports',
+    resolveReport: (id: string) => `/admin/reports/${id}/resolve`,
+    pendingVerifications: '/admin/verifications/pending',
+    approveVerification: (id: string) => `/admin/verifications/${id}/approve`,
+    rejectVerification: (id: string) => `/admin/verifications/${id}/reject`,
+  },
   payment: {
     stripeIntent: '/payment/stripe/intent',
     creditPi: '/payment/pi/verify',
@@ -53,10 +79,12 @@ export const API_ENDPOINTS = {
     pools: '/referral/pools',
   },
   staking: {
+    contracts: '/staking/contracts',
     create: '/staking',
     confirm: (contractId: string) => `/staking/${contractId}/confirm`,
   },
   marriage: {
+    stakes: '/marriage-stake/stakes',
     initiate: '/marriage-stake',
     submitProof: (stakeId: string) => `/marriage-stake/${stakeId}/proof`,
   },

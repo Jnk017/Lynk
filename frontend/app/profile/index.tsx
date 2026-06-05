@@ -36,6 +36,17 @@ export default function ProfileScreen() {
 
   if (!user) return null;
 
+  const completionChecks = [
+    { label: 'Photo', weight: 20, done: Boolean(user.media?.length) },
+    { label: 'Bio', weight: 15, done: Boolean(user.bio) },
+    { label: 'Interests', weight: 15, done: Boolean(user.interests?.length) },
+    { label: 'Location', weight: 10, done: Boolean(user.location?.city || user.location?.country) },
+    { label: 'Prompts', weight: 20, done: Boolean(user.prompts?.length) },
+    { label: 'Verification', weight: 20, done: user.verificationStatus === 'verified' },
+  ];
+  const completionPercent = completionChecks.filter((item) => item.done).reduce((sum, item) => sum + item.weight, 0);
+  const missingSections = completionChecks.filter((item) => !item.done).map((item) => item.label);
+
   const tierBadgeStyle = user.subscriptionPlan
     ? { borderColor: user.subscriptionPlan.tierColor }
     : {};
@@ -107,6 +118,19 @@ export default function ProfileScreen() {
             </View>
           </GlassCard>
 
+          <GlassCard style={styles.completionCard}>
+            <Text style={styles.completionTitle}>Profile completion: {completionPercent}%</Text>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${completionPercent}%` }]} />
+            </View>
+            <Text style={styles.founderSubtitle}>
+              {missingSections.length ? `Missing: ${missingSections.join(', ')}` : 'Your profile is complete.'}
+            </Text>
+            <TouchableOpacity style={styles.referralBtn} onPress={() => router.push('/profile/edit')}>
+              <Text style={styles.referralBtnText}>Improve Profile →</Text>
+            </TouchableOpacity>
+          </GlassCard>
+
           {/* Founder section */}
           {user.isFounder && (
             <GlassCard style={[styles.founderCard, SHADOWS.goldGlow]}>
@@ -143,6 +167,20 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           ))}
 
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/report/history')}>
+            <Text style={styles.menuIcon}>🚩</Text>
+            <Text style={styles.menuLabel}>Report History</Text>
+            <Text style={styles.menuArrow}>→</Text>
+          </TouchableOpacity>
+
+          {['admin', 'super_admin', 'moderator'].includes(user.role || '') && (
+            <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/admin')}>
+              <Text style={styles.menuIcon}>🧭</Text>
+              <Text style={styles.menuLabel}>Admin Panel</Text>
+              <Text style={styles.menuArrow}>→</Text>
+            </TouchableOpacity>
+          )}
+
           <NeonButton
             label="Sign Out"
             onPress={logout}
@@ -177,6 +215,10 @@ const styles = StyleSheet.create({
   statNumber: { fontSize: 20, fontWeight: '800', color: COLORS.gold },
   statLabel: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
   statDivider: { width: 1, height: 30, backgroundColor: COLORS.glassBorder },
+  completionCard: { gap: SPACING.sm },
+  completionTitle: { ...TYPOGRAPHY.h4 },
+  progressBar: { height: 10, backgroundColor: COLORS.glass, borderRadius: 8, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: COLORS.electricBlue },
   founderCard: { backgroundColor: 'rgba(255,215,0,0.05)', borderColor: 'rgba(255,215,0,0.3)' },
   founderHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.md },
   founderIcon: { fontSize: 36 },

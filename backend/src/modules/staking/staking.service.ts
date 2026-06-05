@@ -164,6 +164,13 @@ export class StakingService {
     };
   }
 
+  getUserContracts(userId: string): Promise<StakingContract[]> {
+    return this.stakingRepository.find({
+      where: [{ creatorId: userId }, { partnerId: userId }],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   /**
    * Called by a cron job or manually to resolve expired contracts.
    * If one party ghosted, the victim receives both stakes.

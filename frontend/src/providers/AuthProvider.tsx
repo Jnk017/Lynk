@@ -13,8 +13,10 @@ import { SubscriptionTier } from "../types/api";
 interface User {
   id: string;
   displayName: string;
+  bio?: string;
   email?: string;
   phone?: string;
+  role?: string;
   isFounder: boolean;
   founderRank?: number;
   isRevenueSharingActive: boolean;
@@ -28,6 +30,17 @@ interface User {
   piBalance: number;
   fiatBalance: number;
   isProfileComplete: boolean;
+  occupation?: string;
+  education?: string;
+  interests?: string[];
+  location?: { city?: string; country?: string };
+  prompts?: Array<{ id: string }>;
+  media?: Array<{ id: string }>;
+  profileVisible?: boolean;
+  showDistance?: boolean;
+  showAge?: boolean;
+  pushNotificationsEnabled?: boolean;
+  emailNotificationsEnabled?: boolean;
 }
 
 interface AuthContextType {

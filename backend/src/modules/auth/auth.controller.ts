@@ -9,6 +9,7 @@ import {
   Request,
   Headers,
   Ip,
+  Param,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -20,6 +21,7 @@ import {
   LogoutDto,
   PiAuthDto,
   RefreshTokenDto,
+  ChangePasswordDto,
 } from './dto/login.dto';
 import { AuthSessionContext } from './types/auth-session-context';
 
@@ -102,6 +104,44 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout all devices for the current user' })
   logoutAll(@Request() req: { user: { id: string } }) {
     return this.authService.logoutAllDevices(req.user.id);
+  }
+
+  @Get('sessions')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List active sessions for current user' })
+  sessions(@Request() req: { user: { id: string } }) {
+    return this.authService.listSessions(req.user.id);
+  }
+
+  @Post('sessions/:sessionId/revoke')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke a specific active session' })
+  revokeSession(
+    @Request() req: { user: { id: string } },
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.authService.revokeSession(req.user.id, sessionId);
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Change account password and revoke active sessions',
+  })
+  changePassword(
+    @Request() req: { user: { id: string } },
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(
+      req.user.id,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
 
   @Get('me')

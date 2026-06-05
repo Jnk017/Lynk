@@ -2,6 +2,9 @@ export type FrontendObservabilityEvent =
   | "user_registered"
   | "onboarding_completed"
   | "profile_verified"
+  | "profile_completion_updated"
+  | "verification_submitted"
+  | "report_submitted"
   | "swipe_created"
   | "match_created"
   | "message_sent"
@@ -57,5 +60,5 @@ export function captureFrontendException(
   _properties: EventProperties = {},
 ): void {
   if (!SENTRY_DSN) return;
-  // Placeholder for the official Sentry React Native SDK. Keep non-blocking.
+  // Sentry SDK integration is optional in alpha; keep capture non-blocking until configured.
 }

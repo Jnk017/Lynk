@@ -63,7 +63,11 @@ export default function ChatListScreen() {
           <Text style={styles.lastMessage} numberOfLines={1}>
             {item.lastMessagePreview || 'Start the conversation ✨'}
           </Text>
+          <TouchableOpacity onPress={() => otherParticipant?.user?.id && router.push(`/report/${otherParticipant.user.id}`)}>
+            <Text style={styles.reportLink}>Report or block</Text>
+          </TouchableOpacity>
         </View>
+        {item.unreadCount ? <View style={styles.unread}><Text style={styles.unreadText}>{item.unreadCount}</Text></View> : null}
       </TouchableOpacity>
     );
   };
@@ -124,6 +128,9 @@ const styles = StyleSheet.create({
   roomName: { ...TYPOGRAPHY.body, fontWeight: '600' },
   roomTime: { ...TYPOGRAPHY.small, color: COLORS.textTertiary },
   lastMessage: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
+  reportLink: { color: COLORS.warning, fontSize: 12, marginTop: 4 },
+  unread: { minWidth: 22, height: 22, borderRadius: 11, backgroundColor: COLORS.neonPink, alignItems: 'center', justifyContent: 'center', marginLeft: SPACING.sm },
+  unreadText: { color: '#fff', fontSize: 12, fontWeight: '800' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl },
   emptyEmoji: { fontSize: 60, marginBottom: SPACING.md },
   emptyTitle: { ...TYPOGRAPHY.h4, marginBottom: SPACING.sm, textAlign: 'center' },

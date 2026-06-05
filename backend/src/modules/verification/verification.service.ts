@@ -98,6 +98,6 @@ export class VerificationService {
     await this.userService.updateVerificationDocuments(userId, {
       kycDocumentUrl,
     });
-    // KYC review is manual or via a third-party provider; store the document URL for review
+    await this.userService.markVerificationPending(userId);
   }
 }

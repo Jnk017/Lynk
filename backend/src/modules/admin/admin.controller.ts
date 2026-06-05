@@ -91,6 +91,33 @@ export class AdminController {
     );
   }
 
+  @Get('verifications/pending')
+  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: list pending verification users' })
+  listPendingVerifications(@Query() query: AdminListQueryDto) {
+    return this.adminService.listPendingVerifications(query);
+  }
+
+  @Patch('verifications/:userId/approve')
+  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: approve user verification' })
+  approveVerification(
+    @Request() req: AdminRequest,
+    @Param('userId') userId: string,
+  ) {
+    return this.adminService.approveVerification(req.user, userId);
+  }
+
+  @Patch('verifications/:userId/reject')
+  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Admin: reject user verification' })
+  rejectVerification(
+    @Request() req: AdminRequest,
+    @Param('userId') userId: string,
+  ) {
+    return this.adminService.rejectVerification(req.user, userId);
+  }
+
   @Get('transactions')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Admin: list transactions' })

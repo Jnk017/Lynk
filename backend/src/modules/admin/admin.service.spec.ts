@@ -8,6 +8,7 @@ import { ReferralService } from '../referral/referral.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { SystemSettingsService } from '../system-settings/system-settings.service';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
+import { UserService } from '../user/user.service';
 import { Report } from '../moderation/entities/report.entity';
 import { ReportStatus, RevenuePoolStatus } from '../../common/enums';
 
@@ -44,6 +45,9 @@ describe('AdminService', () => {
   let featureFlagService: jest.Mocked<
     Pick<FeatureFlagService, 'list' | 'upsert'>
   >;
+  let userService: jest.Mocked<
+    Pick<UserService, 'markVerified' | 'rejectVerification'>
+  >;
   let service: AdminService;
 
   beforeEach(() => {
@@ -72,6 +76,10 @@ describe('AdminService', () => {
       list: jest.fn().mockResolvedValue([]),
       upsert: jest.fn().mockResolvedValue({ id: 'flag-1', enabled: true }),
     };
+    userService = {
+      markVerified: jest.fn().mockResolvedValue({ id: 'user-1' }),
+      rejectVerification: jest.fn().mockResolvedValue({ id: 'user-1' }),
+    };
 
     service = new AdminService(
       userRepository as unknown as Repository<User>,
@@ -83,6 +91,7 @@ describe('AdminService', () => {
       auditLogService as unknown as AuditLogService,
       systemSettingsService as unknown as SystemSettingsService,
       featureFlagService as unknown as FeatureFlagService,
+      userService as unknown as UserService,
     );
   });
 

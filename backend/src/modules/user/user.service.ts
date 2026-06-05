@@ -60,6 +60,12 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
+  async rejectVerification(userId: string): Promise<User> {
+    const user = await this.findById(userId);
+    user.verificationStatus = VerificationStatus.REJECTED;
+    return this.userRepository.save(user);
+  }
+
   async getPublicProfile(
     _viewerId: string,
     targetUserId: string,
@@ -91,6 +97,12 @@ export class UserService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  async markVerificationPending(userId: string): Promise<void> {
+    await this.userRepository.update(userId, {
+      verificationStatus: VerificationStatus.PENDING,
+    });
   }
 
   async updateVerificationDocuments(

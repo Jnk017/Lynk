@@ -283,6 +283,62 @@ export class AuthService {
     }
   }
 
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ success: true }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Password login is not enabled');
+    }
+    const matches = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!matches)
+      throw new UnauthorizedException('Current password is invalid');
+    await this.userRepository.update(userId, {
+      passwordHash: await bcrypt.hash(newPassword, 12),
+    });
+    await this.logoutAllDevices(userId);
+    return { success: true };
+  }
+
+  async listSessions(userId: string): Promise<
+    Array<{
+      id: string;
+      deviceId?: string;
+      userAgent?: string;
+      ipAddress?: string;
+      lastUsedAt?: Date;
+      createdAt: Date;
+      expiresAt: Date;
+    }>
+  > {
+    const sessions = await this.refreshTokenRepository.find({
+      where: { userId, revokedAt: IsNull() },
+      order: { lastUsedAt: 'DESC' },
+    });
+    return sessions.map((session) => ({
+      id: session.id,
+      deviceId: session.deviceId,
+      userAgent: session.userAgent,
+      ipAddress: session.ipAddress,
+      lastUsedAt: session.lastUsedAt,
+      createdAt: session.createdAt,
+      expiresAt: session.expiresAt,
+    }));
+  }
+
+  async revokeSession(
+    userId: string,
+    sessionId: string,
+  ): Promise<{ success: true }> {
+    await this.refreshTokenRepository.update(
+      { id: sessionId, userId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
+    return { success: true };
+  }
+
   async logout(refreshToken: string): Promise<{ success: true }> {
     const payload = this.jwtService.verify<JwtRefreshPayload>(refreshToken, {
       secret: this.configService.get<string>('jwt.refreshSecret'),

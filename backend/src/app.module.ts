@@ -54,6 +54,7 @@ import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ObservabilityModule } from './modules/observability/observability.module';
+import { ModerationModule } from './modules/moderation/moderation.module';
 
 @Module({
   imports: [
@@ -145,6 +146,7 @@ import { ObservabilityModule } from './modules/observability/observability.modul
     AuditLogModule,
     AdminModule,
     ObservabilityModule,
+    ModerationModule,
   ],
 })
 export class AppModule {}

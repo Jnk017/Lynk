@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   Param,
@@ -39,6 +40,12 @@ class SubmitMarriageProofDto {
 @ApiBearerAuth()
 export class MarriageController {
   constructor(private marriageService: MarriageService) {}
+
+  @Get('stakes')
+  @ApiOperation({ summary: 'List current user marriage stakes' })
+  list(@Request() req: { user: { id: string } }) {
+    return this.marriageService.getUserStakes(req.user.id);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Initiate a Marriage Stake (Gold/Platinum only)' })

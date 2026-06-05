@@ -11,6 +11,7 @@ import { ReferralModule } from '../referral/referral.module';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 import { SystemSettingsModule } from '../system-settings/system-settings.module';
 import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { FeatureFlagModule } from '../feature-flag/feature-flag.module';
     AuditLogModule,
     SystemSettingsModule,
     FeatureFlagModule,
+    UserModule,
     TypeOrmModule.forFeature([
       User,
       Transaction,

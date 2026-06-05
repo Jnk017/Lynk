@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   Param,
@@ -47,6 +48,12 @@ class ConfirmAttendanceDto {
 @ApiBearerAuth()
 export class StakingController {
   constructor(private stakingService: StakingService) {}
+
+  @Get('contracts')
+  @ApiOperation({ summary: 'List current user staking contracts' })
+  list(@Request() req: { user: { id: string } }) {
+    return this.stakingService.getUserContracts(req.user.id);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create anti-ghosting stake for an IRL date' })

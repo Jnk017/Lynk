@@ -73,6 +73,38 @@ export class User {
 
   @Column({ nullable: true, length: 500 })
   bio: string;
+  @Column({ nullable: true })
+  occupation: string;
+
+  @Column({ nullable: true })
+  education: string;
+
+  @Column({ type: 'jsonb', default: '[]' })
+  interests: string[];
+
+  @Column({ nullable: true })
+  heightCm: number;
+
+  @Column({ nullable: true })
+  religion: string;
+
+  @Column({ type: 'jsonb', default: '[]' })
+  languages: string[];
+
+  @Column({ default: true })
+  profileVisible: boolean;
+
+  @Column({ default: true })
+  showDistance: boolean;
+
+  @Column({ default: true })
+  showAge: boolean;
+
+  @Column({ default: true })
+  pushNotificationsEnabled: boolean;
+
+  @Column({ default: true })
+  emailNotificationsEnabled: boolean;
 
   @Column({ nullable: true })
   birthdate: Date;

@@ -10,7 +10,8 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { SystemSettingsService } from '../system-settings/system-settings.service';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { Report } from '../moderation/entities/report.entity';
-import { ReportStatus } from '../../common/enums';
+import { ReportStatus, VerificationStatus } from '../../common/enums';
+import { UserService } from '../user/user.service';
 
 interface AdminActor {
   id: string;
@@ -38,6 +39,7 @@ export class AdminService {
     private readonly auditLogService: AuditLogService,
     private readonly systemSettingsService: SystemSettingsService,
     private readonly featureFlagService: FeatureFlagService,
+    private readonly userService: UserService,
   ) {}
 
   listUsers(input: PaginationInput = {}): Promise<User[]> {
@@ -130,6 +132,26 @@ export class AdminService {
       metadata: { status, resolution },
     });
     return updated;
+  }
+
+  listPendingVerifications(input: PaginationInput = {}): Promise<User[]> {
+    const { skip, take } = this.getPagination(input);
+    return this.userRepository.find({
+      where: { verificationStatus: VerificationStatus.PENDING },
+      order: { updatedAt: 'DESC' },
+      skip,
+      take,
+    });
+  }
+
+  approveVerification(actor: AdminActor, userId: string): Promise<User> {
+    void actor;
+    return this.userService.markVerified(userId);
+  }
+
+  rejectVerification(actor: AdminActor, userId: string): Promise<User> {
+    void actor;
+    return this.userService.rejectVerification(userId);
   }
 
   listTransactions(input: PaginationInput = {}): Promise<Transaction[]> {
