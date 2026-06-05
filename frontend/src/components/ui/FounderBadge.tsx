@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SHADOWS } from '../../constants/theme';
+import { COLORS, SHADOWS, GRADIENTS } from '../../constants/theme';
 
 interface FounderBadgeProps {
   rank: number;
@@ -15,7 +15,7 @@ export function FounderBadge({ rank, size = 'md' }: FounderBadgeProps) {
 
   return (
     <LinearGradient
-      colors={['#FFD700', '#FFA500', '#FFD700']}
+      colors={[...GRADIENTS.gold]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[
@@ -32,7 +32,7 @@ export function FounderBadge({ rank, size = 'md' }: FounderBadgeProps) {
 export function FounderRankBadge({ rank }: { rank: number }) {
   return (
     <View style={styles.rankBadge}>
-      <LinearGradient colors={['#FFD700', '#FFA500']} style={styles.rankGradient}>
+      <LinearGradient colors={[...GRADIENTS.gold]} style={styles.rankGradient}>
         <Text style={styles.rankCrown}>👑</Text>
         <Text style={styles.rankText}>Founder #{rank}</Text>
       </LinearGradient>
@@ -65,6 +65,6 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0A0A0A',
+    color: COLORS.background,
   },
 });

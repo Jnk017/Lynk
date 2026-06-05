@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SHADOWS, BORDER_RADIUS, TYPOGRAPHY } from '../../constants/theme';
+import { COLORS, SHADOWS, BORDER_RADIUS, GRADIENTS } from '../../constants/theme';
 
 type Variant = 'primary' | 'gold' | 'neon' | 'outline' | 'ghost';
 
@@ -23,10 +23,10 @@ interface NeonButtonProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const GRADIENT_MAP: Record<Variant, [string, string]> = {
-  primary: [COLORS.primaryViolet, COLORS.electricBlue],
-  gold: ['#FFD700', '#FFA500'],
-  neon: [COLORS.neonPink, COLORS.primaryViolet],
+const GRADIENT_MAP: Record<Variant, readonly [string, string, ...string[]]> = {
+  primary: [...GRADIENTS.primary],
+  gold: [...GRADIENTS.gold],
+  neon: [...GRADIENTS.neon],
   outline: ['transparent', 'transparent'],
   ghost: ['transparent', 'transparent'],
 };
