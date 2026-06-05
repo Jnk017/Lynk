@@ -15,7 +15,7 @@ import { GlassCard } from '../../src/components/ui/GlassCard';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { FounderRankBadge } from '../../src/components/ui/FounderBadge';
 import { SubscriptionBadge } from '../../src/components/ui/SubscriptionBadge';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS } from '../../src/constants/theme';
 import { SubscriptionTier } from '../../src/types/api';
 
 const PROFILE_MENU_ITEMS: Array<{ icon: string; label: string; route: Href }> = [
@@ -42,7 +42,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
 
       {/* Decorative ambient glow */}
       <View style={[styles.glow]} />
@@ -63,7 +63,7 @@ export default function ProfileScreen() {
           <View style={styles.avatarSection}>
             <View style={[styles.avatarBorder, tierBadgeStyle]}>
               <LinearGradient
-                colors={[COLORS.primaryViolet, COLORS.electricBlue]}
+                colors={GRADIENTS.gold}
                 style={styles.avatar}
               >
                 <Text style={styles.avatarInitial}>{user.displayName?.[0]?.toUpperCase()}</Text>

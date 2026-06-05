@@ -18,7 +18,7 @@ import * as SecureStore from 'expo-secure-store';
 import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
 import { WS_URL } from '../../src/constants/api';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/ui/GlassCard';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { useAuth } from '../../src/providers/AuthProvider';
@@ -117,7 +117,7 @@ export default function ChatRoomScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -187,7 +187,7 @@ export default function ChatRoomScreen() {
               disabled={!input.trim()}
             >
               <LinearGradient
-                colors={[COLORS.primaryViolet, COLORS.electricBlue]}
+                colors={GRADIENTS.gold}
                 style={styles.sendGradient}
               >
                 <Text style={styles.sendIcon}>➤</Text>

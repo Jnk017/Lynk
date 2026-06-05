@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NeonButton } from '../../src/components/ui/NeonButton';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING } from '../../src/constants/theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -51,7 +51,7 @@ function AnimatedLogo() {
       <Animated.View style={[styles.orbitRing, orbitStyle]} />
       <Animated.View style={[styles.logoCircle, logoStyle]}>
         <LinearGradient
-          colors={[COLORS.primaryViolet, COLORS.electricBlue]}
+          colors={GRADIENTS.gold}
           style={styles.logoGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -77,7 +77,7 @@ export default function WelcomeScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#0A0A0A', '#0D0D1A', '#0A0A0A']}
+        colors={[...GRADIENTS.dark, COLORS.background]}
         style={StyleSheet.absoluteFill}
       />
 

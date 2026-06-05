@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING } from '../../src/constants/theme';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { ChatParticipant, ChatRoom } from '../../src/types/api';
 import { getErrorMessage } from '../../src/utils/errors';
@@ -40,7 +40,7 @@ export default function ChatListScreen() {
             <Image source={{ uri: photo }} style={styles.avatar} />
           ) : (
             <LinearGradient
-              colors={[COLORS.primaryViolet, COLORS.electricBlue]}
+              colors={GRADIENTS.gold}
               style={styles.avatar}
             >
               <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
@@ -70,7 +70,7 @@ export default function ChatListScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
