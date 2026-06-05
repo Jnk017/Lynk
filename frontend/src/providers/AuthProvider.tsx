@@ -28,6 +28,7 @@ interface User {
   piBalance: number;
   fiatBalance: number;
   isProfileComplete: boolean;
+  role?: 'user' | 'premium_user' | 'founder' | 'moderator' | 'admin' | 'super_admin';
 }
 
 interface AuthContextType {

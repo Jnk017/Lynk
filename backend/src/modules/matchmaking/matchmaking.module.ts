@@ -7,12 +7,14 @@ import { Match } from './entities/match.entity';
 import { MatchmakingSession } from './entities/matchmaking-session.entity';
 import { UserModule } from '../user/user.module';
 import { NotificationModule } from '../notification/notification.module';
+import { ModerationModule } from '../moderation/moderation.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([SwipeActionEntity, Match, MatchmakingSession]),
     UserModule,
     NotificationModule,
+    ModerationModule,
   ],
   controllers: [MatchmakingController],
   providers: [MatchmakingService],

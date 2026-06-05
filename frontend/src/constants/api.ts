@@ -64,6 +64,20 @@ export const API_ENDPOINTS = {
     initiate: '/marriage-stake',
     submitProof: (stakeId: string) => `/marriage-stake/${stakeId}/proof`,
   },
+  safety: {
+    reports: '/safety/reports',
+    myReports: '/safety/reports/me',
+    blocks: '/safety/blocks',
+    block: (userId: string) => `/safety/blocks/${userId}`,
+  },
+  admin: {
+    users: '/admin/users',
+    reports: '/admin/reports',
+    reportReview: (id: string) => `/admin/reports/${id}/review`,
+    reportResolve: (id: string) => `/admin/reports/${id}/resolve`,
+    verifications: '/admin/verifications',
+    verificationReview: (id: string) => `/admin/verifications/${id}/review`,
+  },
   gifts: {
     catalog: '/gifts/catalog',
     send: '/gifts/send',

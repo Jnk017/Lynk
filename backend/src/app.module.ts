@@ -31,6 +31,7 @@ import { FeatureFlag } from './modules/feature-flag/entities/feature-flag.entity
 import { AuditLog } from './modules/audit-log/entities/audit-log.entity';
 import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
 import { Report } from './modules/moderation/entities/report.entity';
+import { UserBlock } from './modules/moderation/entities/user-block.entity';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -54,6 +55,7 @@ import { FeatureFlagModule } from './modules/feature-flag/feature-flag.module';
 import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ObservabilityModule } from './modules/observability/observability.module';
+import { ModerationModule } from './modules/moderation/moderation.module';
 
 @Module({
   imports: [
@@ -97,6 +99,7 @@ import { ObservabilityModule } from './modules/observability/observability.modul
           AuditLog,
           RefreshToken,
           Report,
+          UserBlock,
         ],
         synchronize:
           configService.get<boolean>('database.synchronize') === true,
@@ -145,6 +148,7 @@ import { ObservabilityModule } from './modules/observability/observability.modul
     AuditLogModule,
     AdminModule,
     ObservabilityModule,
+    ModerationModule,
   ],
 })
 export class AppModule {}

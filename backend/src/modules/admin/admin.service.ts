@@ -10,7 +10,13 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { SystemSettingsService } from '../system-settings/system-settings.service';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { Report } from '../moderation/entities/report.entity';
-import { ReportStatus } from '../../common/enums';
+import {
+  ReportReason,
+  ReportStatus,
+  VerificationStatus,
+} from '../../common/enums';
+import { ObservabilityService } from '../observability/observability.service';
+import { ObservabilityEventName } from '../observability/observability-events';
 
 interface AdminActor {
   id: string;
@@ -19,6 +25,13 @@ interface AdminActor {
 interface PaginationInput {
   page?: number;
   limit?: number;
+}
+interface UserListInput extends PaginationInput {
+  search?: string;
+}
+interface ReportListInput extends PaginationInput {
+  status?: ReportStatus;
+  reason?: ReportReason;
 }
 
 @Injectable()
@@ -38,15 +51,25 @@ export class AdminService {
     private readonly auditLogService: AuditLogService,
     private readonly systemSettingsService: SystemSettingsService,
     private readonly featureFlagService: FeatureFlagService,
+    private readonly observabilityService: ObservabilityService,
   ) {}
 
-  listUsers(input: PaginationInput = {}): Promise<User[]> {
+  listUsers(input: UserListInput = {}): Promise<User[]> {
     const { skip, take } = this.getPagination(input);
-    return this.userRepository.find({
-      order: { createdAt: 'DESC' },
-      skip,
-      take,
-    });
+    const query = this.userRepository
+      .createQueryBuilder('user')
+      .orderBy('user.createdAt', 'DESC')
+      .skip(skip)
+      .take(take);
+    if (input.search?.trim()) {
+      query.where(
+        '(user.displayName ILIKE :search OR user.email ILIKE :search OR user.phone ILIKE :search)',
+        {
+          search: `%${input.search.trim()}%`,
+        },
+      );
+    }
+    return query.getMany();
   }
 
   async getUserDetail(userId: string): Promise<User> {
@@ -93,14 +116,71 @@ export class AdminService {
     return { ...user, isBanned: false, bannedAt: null, banReason: null };
   }
 
-  listReports(input: PaginationInput = {}): Promise<Report[]> {
+  listReports(input: ReportListInput = {}): Promise<Report[]> {
     const { skip, take } = this.getPagination(input);
-    return this.reportRepository.find({
-      relations: ['reporter', 'reportedUser', 'resolvedBy'],
-      order: { createdAt: 'DESC' },
+    const query = this.reportRepository
+      .createQueryBuilder('report')
+      .leftJoinAndSelect('report.reporter', 'reporter')
+      .leftJoinAndSelect('report.reportedUser', 'reportedUser')
+      .orderBy('report.createdAt', 'DESC')
+      .skip(skip)
+      .take(take);
+    if (input.status)
+      query.andWhere('report.status = :status', { status: input.status });
+    if (input.reason)
+      query.andWhere('report.reason = :reason', { reason: input.reason });
+    return query.getMany();
+  }
+
+  async reviewReport(actor: AdminActor, reportId: string): Promise<Report> {
+    const report = await this.reportRepository.findOne({
+      where: { id: reportId },
+    });
+    if (!report) throw new NotFoundException('Report not found');
+    report.status = ReportStatus.REVIEWING;
+    report.moderatorId = actor.id;
+    const updated = await this.reportRepository.save(report);
+    await this.auditLogService.record({
+      action: 'admin.report.review',
+      actorUserId: actor.id,
+      targetType: 'Report',
+      targetId: reportId,
+    });
+    return updated;
+  }
+
+  listVerificationQueue(input: PaginationInput = {}): Promise<User[]> {
+    const { skip, take } = this.getPagination(input);
+    return this.userRepository.find({
+      where: { verificationStatus: VerificationStatus.PENDING },
+      order: { updatedAt: 'ASC' },
       skip,
       take,
     });
+  }
+
+  async reviewVerification(
+    actor: AdminActor,
+    userId: string,
+    status: VerificationStatus.VERIFIED | VerificationStatus.REJECTED,
+    note?: string,
+  ): Promise<User> {
+    const user = await this.getUserDetail(userId);
+    user.verificationStatus = status;
+    const updated = await this.userRepository.save(user);
+    await this.auditLogService.record({
+      action: 'admin.verification.review',
+      actorUserId: actor.id,
+      targetType: 'User',
+      targetId: userId,
+      metadata: { status, note },
+    });
+    void this.observabilityService.track(
+      ObservabilityEventName.VERIFICATION_REVIEWED,
+      actor.id,
+      { userId, status },
+    );
+    return updated;
   }
 
   async resolveReport(
@@ -118,8 +198,8 @@ export class AdminService {
     const updated = await this.reportRepository.save({
       ...report,
       status,
-      resolution,
-      resolvedById: actor.id,
+      resolutionNote: resolution,
+      moderatorId: actor.id,
       resolvedAt,
     });
     await this.auditLogService.record({
@@ -129,6 +209,13 @@ export class AdminService {
       targetId: reportId,
       metadata: { status, resolution },
     });
+    void this.observabilityService.track(
+      status === ReportStatus.RESOLVED
+        ? ObservabilityEventName.REPORT_RESOLVED
+        : ObservabilityEventName.REPORT_DISMISSED,
+      actor.id,
+      { reportId },
+    );
     return updated;
   }
 

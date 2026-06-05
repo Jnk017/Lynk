@@ -5,12 +5,14 @@ import { User } from './entities/user.entity';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { TRUST_SCORE_VERIFICATION_BONUS } from '../../common/constants';
 import { VerificationStatus } from '../../common/enums';
+import { ModerationService } from '../moderation/moderation.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private moderationService: ModerationService,
   ) {}
 
   async findById(id: string): Promise<User> {
@@ -61,9 +63,13 @@ export class UserService {
   }
 
   async getPublicProfile(
-    _viewerId: string,
+    viewerId: string,
     targetUserId: string,
   ): Promise<Partial<User>> {
+    await this.moderationService.assertInteractionAllowed(
+      viewerId,
+      targetUserId,
+    );
     const user = await this.userRepository.findOne({
       where: { id: targetUserId },
       relations: ['media', 'prompts', 'subscriptionPlan'],

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,9 +25,11 @@ import { NeonButton } from '../../src/components/ui/NeonButton';
 import { useAuth } from '../../src/providers/AuthProvider';
 import { ChatMessage } from '../../src/types/api';
 import { getErrorMessage } from '../../src/utils/errors';
+import { safetyService } from '../../src/services/safety';
+import { trackFrontendEvent } from '../../src/services/observability';
 
 export default function ChatRoomScreen() {
-  const { roomId } = useLocalSearchParams<{ roomId: string }>();
+  const { roomId, targetUserId, targetName } = useLocalSearchParams<{ roomId: string; targetUserId?: string; targetName?: string }>();
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -101,6 +104,18 @@ export default function ChatRoomScreen() {
     setInput('');
   };
 
+  const openSafetyActions = () => {
+    if (!targetUserId) return;
+    Alert.alert('Conversation safety', `Choose an action for ${targetName || 'this member'}.`, [
+      { text: 'Report', onPress: () => router.push({ pathname: `/safety/report/${targetUserId}`, params: { name: targetName } }) },
+      { text: 'Block', style: 'destructive', onPress: () => Alert.alert('Block this member?', 'You will no longer be able to message, match again, or access sensitive profile interactions.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Block member', style: 'destructive', onPress: async () => { try { await safetyService.block(targetUserId); if (user) void trackFrontendEvent('user_blocked', user.id, { blockedUserId: targetUserId }); router.back(); } catch { setSocketError('We could not block this member. Please try again.'); } } },
+      ]) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isMine = item.senderId === user?.id;
     return (
@@ -120,12 +135,12 @@ export default function ChatRoomScreen() {
       <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" accessibilityHint="Returns to conversations" onPress={() => router.back()}>
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerName}>Chat</Text>
-          <TouchableOpacity>
-            <Text style={{ fontSize: 20 }}>⋯</Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Conversation safety actions" accessibilityHint="Opens report and block options" onPress={openSafetyActions} disabled={!targetUserId}>
+            <Text style={{ fontSize: 20, color: COLORS.textPrimary }}>⋯</Text>
           </TouchableOpacity>
         </View>
 
@@ -174,6 +189,8 @@ export default function ChatRoomScreen() {
               style={styles.input}
               value={input}
               onChangeText={setInput}
+              accessibilityLabel="Message"
+              accessibilityHint="Write a message to this member"
               placeholder="Write a message..."
               placeholderTextColor={COLORS.textTertiary}
               multiline
@@ -183,6 +200,9 @@ export default function ChatRoomScreen() {
             />
             <TouchableOpacity
               style={[styles.sendBtn, !input.trim() && { opacity: 0.4 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Send message"
+              accessibilityHint="Sends the typed message"
               onPress={sendMessage}
               disabled={!input.trim()}
             >

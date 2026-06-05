@@ -9,7 +9,15 @@ export type FrontendObservabilityEvent =
   | "payment_created"
   | "subscription_started"
   | "referral_completed"
-  | "founder_joined";
+  | "founder_joined"
+  | "report_created"
+  | "report_submitted"
+  | "report_resolved"
+  | "report_dismissed"
+  | "user_blocked"
+  | "user_unblocked"
+  | "safety_center_opened"
+  | "verification_reviewed";
 
 type EventProperties = Record<
   string,

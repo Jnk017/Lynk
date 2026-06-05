@@ -10,6 +10,7 @@ import { SystemSettingsService } from '../system-settings/system-settings.servic
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { Report } from '../moderation/entities/report.entity';
 import { ReportStatus, RevenuePoolStatus } from '../../common/enums';
+import { ObservabilityService } from '../observability/observability.service';
 
 interface RepositoryMock<T extends object> {
   find: jest.Mock<Promise<T[]>, [unknown?]>;
@@ -83,6 +84,9 @@ describe('AdminService', () => {
       auditLogService as unknown as AuditLogService,
       systemSettingsService as unknown as SystemSettingsService,
       featureFlagService as unknown as FeatureFlagService,
+      {
+        track: jest.fn().mockResolvedValue(undefined),
+      } as unknown as ObservabilityService,
     );
   });
 
@@ -126,8 +130,8 @@ describe('AdminService', () => {
       expect.objectContaining({
         id: 'report-1',
         status: ReportStatus.RESOLVED,
-        resolution: 'warning sent',
-        resolvedById: 'moderator-1',
+        resolutionNote: 'warning sent',
+        moderatorId: 'moderator-1',
       }),
     );
     expect(auditLogService.record).toHaveBeenCalledWith(
