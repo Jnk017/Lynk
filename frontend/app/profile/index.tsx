@@ -15,7 +15,7 @@ import { GlassCard } from '../../src/components/ui/GlassCard';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { FounderRankBadge } from '../../src/components/ui/FounderBadge';
 import { SubscriptionBadge } from '../../src/components/ui/SubscriptionBadge';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS } from '../../src/constants/theme';
 import { SubscriptionTier } from '../../src/types/api';
 
 const PROFILE_MENU_ITEMS: Array<{ icon: string; label: string; route: Href }> = [
@@ -42,18 +42,18 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
 
       {/* Decorative ambient glow */}
       <View style={[styles.glow]} />
 
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()}>
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>My Profile</Text>
-          <TouchableOpacity onPress={() => router.push('/profile/edit')}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Edit profile" onPress={() => router.push('/profile/edit')}>
             <Text style={styles.editText}>Edit</Text>
           </TouchableOpacity>
         </View>
@@ -63,7 +63,7 @@ export default function ProfileScreen() {
           <View style={styles.avatarSection}>
             <View style={[styles.avatarBorder, tierBadgeStyle]}>
               <LinearGradient
-                colors={[COLORS.primaryViolet, COLORS.electricBlue]}
+                colors={GRADIENTS.gold}
                 style={styles.avatar}
               >
                 <Text style={styles.avatarInitial}>{user.displayName?.[0]?.toUpperCase()}</Text>
@@ -122,6 +122,8 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="View referral statistics"
                 style={styles.referralBtn}
                 onPress={() => router.push('/referral')}
               >
@@ -134,6 +136,8 @@ export default function ProfileScreen() {
           {PROFILE_MENU_ITEMS.map((item) => (
             <TouchableOpacity
               key={item.label}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
               style={styles.menuItem}
               onPress={() => router.push(item.route)}
             >
@@ -162,27 +166,27 @@ const styles = StyleSheet.create({
   backText: { color: COLORS.textSecondary, fontSize: 20 },
   title: { ...TYPOGRAPHY.h4 },
   editText: { color: COLORS.electricBlue, fontSize: 16 },
-  scroll: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxl, gap: SPACING.md },
+  scroll: { paddingHorizontal: SPACING.xl, paddingBottom: SPACING.xxl, gap: SPACING.md, width: '100%', maxWidth: 760, alignSelf: 'center' },
   avatarSection: { alignItems: 'center', paddingVertical: SPACING.xl, gap: SPACING.md },
   avatarBorder: { padding: 3, borderRadius: 60, borderWidth: 2, borderColor: COLORS.glassBorder },
   avatar: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { fontSize: 42, color: '#fff', fontWeight: '700' },
+  avatarInitial: { fontSize: 42, color: COLORS.textPrimary, fontWeight: '700' },
   displayName: { ...TYPOGRAPHY.h2 },
   badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, justifyContent: 'center' },
   verifiedBadge: { backgroundColor: COLORS.electricBlue, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  verifiedText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  verifiedText: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '700' },
   statsCard: { marginBottom: SPACING.sm },
   statsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   stat: { alignItems: 'center', flex: 1 },
   statNumber: { fontSize: 20, fontWeight: '800', color: COLORS.gold },
   statLabel: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
   statDivider: { width: 1, height: 30, backgroundColor: COLORS.glassBorder },
-  founderCard: { backgroundColor: 'rgba(255,215,0,0.05)', borderColor: 'rgba(255,215,0,0.3)' },
+  founderCard: { backgroundColor: COLORS.glass, borderColor: COLORS.gold },
   founderHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.md },
   founderIcon: { fontSize: 36 },
   founderTitle: { fontSize: 18, fontWeight: '800', color: COLORS.gold },
   founderSubtitle: { fontSize: 13, color: COLORS.textSecondary, marginTop: 2 },
-  referralBtn: { alignSelf: 'flex-start' },
+  referralBtn: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   referralBtnText: { color: COLORS.electricBlue, fontWeight: '600', fontSize: 14 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.md, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder, gap: SPACING.md },
   menuIcon: { fontSize: 22, width: 30 },

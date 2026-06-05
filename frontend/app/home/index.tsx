@@ -6,6 +6,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
+  Modal,
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,10 +21,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS, BORDER_RADIUS } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/ui/GlassCard';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { PublicProfile, ProfileMedia } from '../../src/types/api';
@@ -34,7 +35,8 @@ import { useAuth } from '../../src/providers/AuthProvider';
 
 const { width, height } = Dimensions.get('window');
 const SWIPE_THRESHOLD = width * 0.35;
-const CARD_WIDTH = width - SPACING.xl * 2;
+const CARD_WIDTH = Math.min(width - SPACING.xl * 2, 520);
+const CARD_HEIGHT = Math.min(height * 0.56, 680);
 
 function SwipeCard({ user: profile, onSwipe }: { user: PublicProfile; onSwipe: (direction: 'left' | 'right' | 'up') => void }) {
   const translateX = useSharedValue(0);
@@ -101,7 +103,7 @@ function SwipeCard({ user: profile, onSwipe }: { user: PublicProfile; onSwipe: (
         )}
 
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.95)']}
+          colors={['transparent', COLORS.overlay]}
           style={styles.cardOverlay}
         />
 
@@ -158,8 +160,8 @@ function SwipeCard({ user: profile, onSwipe }: { user: PublicProfile; onSwipe: (
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [matchedProfile, setMatchedProfile] = useState<PublicProfile | null>(null);
 
   const {
     data: profiles = [],
@@ -175,7 +177,7 @@ export default function HomeScreen() {
 
   const swipeMutation = useMutation({
     mutationFn: ({ targetId, action }: { targetId: string; action: string }) =>
-      api.post(API_ENDPOINTS.matching.swipe(targetId), { action }),
+      api.post<{ matched: boolean; matchId?: string }>(API_ENDPOINTS.matching.swipe(targetId), { action }),
   });
 
   const handleSwipe = useCallback(
@@ -186,7 +188,12 @@ export default function HomeScreen() {
       const action = direction === 'right' ? 'like' : direction === 'up' ? 'super_like' : 'dislike';
       swipeMutation.mutate(
         { targetId: profile.id, action },
-        { onError: () => setCurrentIndex((i) => Math.max(0, i - 1)) },
+        {
+          onSuccess: (result) => {
+            if (result.matched) setMatchedProfile(profile);
+          },
+          onError: () => setCurrentIndex((i) => Math.max(0, i - 1)),
+        },
       );
       setCurrentIndex((i) => i + 1);
     },
@@ -197,11 +204,25 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
+        <Modal visible={Boolean(matchedProfile)} transparent animationType="fade" onRequestClose={() => setMatchedProfile(null)}>
+          <View style={styles.matchOverlay}>
+            <LinearGradient colors={GRADIENTS.dark} style={styles.matchCelebration}>
+              <Text style={styles.matchMark}>♡</Text>
+              <Text style={styles.matchKicker}>A MEANINGFUL LYNK</Text>
+              <Text accessibilityRole="header" style={styles.matchTitle}>It’s a match.</Text>
+              <Text style={styles.matchCopy}>You and {matchedProfile?.displayName ?? 'this person'} both chose to connect. Start with something thoughtful.</Text>
+              <View style={styles.matchActions}>
+                <NeonButton label="Say hello" variant="gold" onPress={() => { setMatchedProfile(null); router.push('/chat'); }} />
+                <NeonButton label="Keep discovering" variant="outline" onPress={() => setMatchedProfile(null)} />
+              </View>
+            </LinearGradient>
+          </View>
+        </Modal>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/profile')}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open profile" onPress={() => router.push('/profile')}>
             <View style={styles.avatarSmall}>
               <Text>👤</Text>
             </View>
@@ -214,17 +235,17 @@ export default function HomeScreen() {
             )}
           </View>
 
-          <TouchableOpacity onPress={() => router.push('/chat')}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open messages" onPress={() => router.push('/chat')}>
             <Text style={styles.iconButton}>💬</Text>
           </TouchableOpacity>
         </View>
 
         {/* Mode selector */}
         <View style={styles.modeSelector}>
-          <TouchableOpacity style={[styles.modeBtn, styles.modeBtnActive]}>
+          <TouchableOpacity accessibilityRole="tab" accessibilityState={{ selected: true }} accessibilityLabel="Swipe mode" style={[styles.modeBtn, styles.modeBtnActive]}>
             <Text style={[styles.modeText, styles.modeTextActive]}>Swipe</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.modeBtn} onPress={() => router.push('/match/discovery')}>
+          <TouchableOpacity accessibilityRole="tab" accessibilityState={{ selected: false }} accessibilityLabel="Discovery mode" style={styles.modeBtn} onPress={() => router.push('/match/discovery')}>
             <Text style={styles.modeText}>Discovery 📹</Text>
           </TouchableOpacity>
         </View>
@@ -271,6 +292,7 @@ export default function HomeScreen() {
         {/* Action buttons */}
         <View style={styles.actions}>
           <TouchableOpacity
+            accessibilityRole="button" accessibilityLabel="Pass on this profile"
             style={[styles.actionBtn, styles.nopeBtn]}
             onPress={() => handleSwipe('left')}
           >
@@ -278,6 +300,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            accessibilityRole="button" accessibilityLabel="Send a priority like"
             style={[styles.actionBtn, styles.superLikeBtn]}
             onPress={() => handleSwipe('up')}
           >
@@ -285,10 +308,11 @@ export default function HomeScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
+            accessibilityRole="button" accessibilityLabel="Like this profile"
             style={[styles.actionBtn, styles.likeBtn]}
             onPress={() => handleSwipe('right')}
           >
-            <Text style={{ fontSize: 26 }}>💚</Text>
+            <Text style={{ fontSize: 26 }}>♡</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -297,21 +321,28 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  matchOverlay: { flex: 1, backgroundColor: COLORS.overlay, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl },
+  matchCelebration: { width: '100%', maxWidth: 420, borderRadius: BORDER_RADIUS.xxl, borderWidth: 1, borderColor: COLORS.gold, padding: SPACING.xl, alignItems: 'center', gap: SPACING.md, ...SHADOWS.premium },
+  matchMark: { fontSize: 64, color: COLORS.gold },
+  matchKicker: { ...TYPOGRAPHY.label, color: COLORS.gold, letterSpacing: 2 },
+  matchTitle: { ...TYPOGRAPHY.h1, textAlign: 'center' },
+  matchCopy: { ...TYPOGRAPHY.bodySecondary, textAlign: 'center' },
+  matchActions: { width: '100%', gap: SPACING.md, marginTop: SPACING.sm },
   container: { flex: 1, backgroundColor: COLORS.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.sm },
   avatarSmall: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center' },
   logoSmall: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logoText: { fontSize: 20, fontWeight: '900', color: '#fff', letterSpacing: 4 },
+  logoText: { fontSize: 20, fontWeight: '900', color: COLORS.textPrimary, letterSpacing: 4 },
   iconButton: { fontSize: 24 },
   modeSelector: { flexDirection: 'row', marginHorizontal: SPACING.xl, marginBottom: SPACING.md, backgroundColor: COLORS.glass, borderRadius: 20, padding: 4, borderWidth: 1, borderColor: COLORS.glassBorder },
   modeBtn: { flex: 1, alignItems: 'center', paddingVertical: SPACING.xs, borderRadius: 18 },
   modeBtnActive: { backgroundColor: COLORS.primaryViolet },
   modeText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
-  modeTextActive: { color: '#fff' },
+  modeTextActive: { color: COLORS.textPrimary },
   cardStack: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   card: {
     width: CARD_WIDTH,
-    height: height * 0.6,
+    height: CARD_HEIGHT,
     borderRadius: 20,
     overflow: 'hidden',
     position: 'absolute',
@@ -322,19 +353,19 @@ const styles = StyleSheet.create({
   cardInfo: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: SPACING.lg, gap: 4 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   nameText: { ...TYPOGRAPHY.h3, fontWeight: '700' },
-  verifiedBadge: { backgroundColor: COLORS.electricBlue, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, fontSize: 12, color: '#fff', fontWeight: '700' },
+  verifiedBadge: { backgroundColor: COLORS.electricBlue, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, fontSize: 12, color: COLORS.textPrimary, fontWeight: '700' },
   locationText: { color: COLORS.textSecondary, fontSize: 14 },
   bioText: { color: COLORS.textSecondary, fontSize: 14, lineHeight: 20 },
   photoIndicators: { position: 'absolute', top: SPACING.md, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 4 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.4)' },
-  dotActive: { backgroundColor: '#fff', width: 20 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.textTertiary },
+  dotActive: { backgroundColor: COLORS.textPrimary, width: 20 },
   badge: { position: 'absolute', top: 40, borderWidth: 3, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 },
-  likeBadge: { left: 20, transform: [{ rotate: '-15deg' }], borderColor: '#00E676' },
+  likeBadge: { left: 20, transform: [{ rotate: '-15deg' }], borderColor: COLORS.gold },
   nopeBadge: { right: 20, transform: [{ rotate: '15deg' }], borderColor: COLORS.error },
-  superBadge: { alignSelf: 'center', top: 30, borderColor: '#FFD700' },
-  likeBadgeText: { color: '#00E676', fontWeight: '900', fontSize: 20 },
+  superBadge: { alignSelf: 'center', top: 30, borderColor: COLORS.gold },
+  likeBadgeText: { color: COLORS.gold, fontWeight: '900', fontSize: 20 },
   nopeBadgeText: { color: COLORS.error, fontWeight: '900', fontSize: 20 },
-  superBadgeText: { color: '#FFD700', fontWeight: '900', fontSize: 20 },
+  superBadgeText: { color: COLORS.gold, fontWeight: '900', fontSize: 20 },
   loadingCard: { backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center' },
   emptyCard: { width: CARD_WIDTH, padding: SPACING.xl, alignItems: 'center' },
   emptyEmoji: { fontSize: 60, marginBottom: SPACING.md },
@@ -343,7 +374,7 @@ const styles = StyleSheet.create({
   actionError: { color: COLORS.error, textAlign: 'center', marginBottom: SPACING.sm },
   actions: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: SPACING.xl, gap: SPACING.xl },
   actionBtn: { width: 60, height: 60, borderRadius: 30, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
-  nopeBtn: { borderColor: COLORS.error, backgroundColor: 'rgba(255,82,82,0.1)' },
-  likeBtn: { borderColor: '#00E676', backgroundColor: 'rgba(0,230,118,0.1)', width: 72, height: 72, borderRadius: 36 },
-  superLikeBtn: { borderColor: COLORS.gold, backgroundColor: 'rgba(255,215,0,0.1)' },
+  nopeBtn: { borderColor: COLORS.error, backgroundColor: COLORS.glass },
+  likeBtn: { borderColor: COLORS.gold, backgroundColor: COLORS.glass, width: 72, height: 72, borderRadius: 36 },
+  superLikeBtn: { borderColor: COLORS.gold, backgroundColor: COLORS.glass },
 });

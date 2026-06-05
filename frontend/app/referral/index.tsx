@@ -17,7 +17,7 @@ import { GlassCard } from '../../src/components/ui/GlassCard';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { ReferralStats, RevenueDistribution, RevenuePool } from '../../src/types/api';
 import { getErrorMessage } from '../../src/utils/errors';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING, SHADOWS } from '../../src/constants/theme';
 
 interface ReferralDashboardStats extends ReferralStats {
   totalReferrals?: number;
@@ -73,10 +73,10 @@ export default function ReferralScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()}>
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Founder Dashboard</Text>
@@ -134,7 +134,7 @@ export default function ReferralScreen() {
             {shareError ? <Text style={styles.errorText}>{shareError}</Text> : null}
             <TouchableOpacity style={styles.shareBtn} onPress={shareReferral}>
               <LinearGradient
-                colors={[COLORS.primaryViolet, COLORS.electricBlue]}
+                colors={GRADIENTS.gold}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.shareGradient}
@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md },
   backText: { color: COLORS.textSecondary, fontSize: 20 },
   title: { ...TYPOGRAPHY.h4 },
-  scroll: { padding: SPACING.xl, gap: SPACING.md },
-  founderCard: { backgroundColor: 'rgba(255,215,0,0.05)', borderColor: 'rgba(255,215,0,0.3)', gap: SPACING.sm },
+  scroll: { padding: SPACING.xl, gap: SPACING.md, width: '100%', maxWidth: 760, alignSelf: 'center' },
+  founderCard: { backgroundColor: COLORS.glass, borderColor: COLORS.gold, gap: SPACING.sm },
   founderTitle: { fontSize: 22, fontWeight: '900', color: COLORS.gold },
   founderStatus: { color: COLORS.textSecondary, fontSize: 14 },
   progressSection: { gap: SPACING.xs, marginTop: SPACING.sm },
-  progressBar: { height: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' },
+  progressBar: { height: 8, backgroundColor: COLORS.glass, borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: COLORS.gold, borderRadius: 4 },
   progressText: { color: COLORS.textTertiary, fontSize: 13 },
   nonFounderCard: { borderColor: COLORS.warning },
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   referralCode: { fontSize: 28, fontWeight: '900', color: COLORS.gold, letterSpacing: 4 },
   shareBtn: { borderRadius: 30, overflow: 'hidden' },
   shareGradient: { paddingVertical: SPACING.md, alignItems: 'center' },
-  shareBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  shareBtnText: { color: COLORS.textPrimary, fontWeight: '700', fontSize: 16 },
   statRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder },
   statLabel: { color: COLORS.textSecondary, fontSize: 15 },
   statValue: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700' },

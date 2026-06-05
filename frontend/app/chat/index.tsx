@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -13,13 +13,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
-import { NeonButton } from '../../src/components/ui/NeonButton';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING } from '../../src/constants/theme';
+import { EmptyState, ErrorState, LoadingState } from '../../src/components/premium';
 import { ChatParticipant, ChatRoom } from '../../src/types/api';
 import { getErrorMessage } from '../../src/utils/errors';
 
 export default function ChatListScreen() {
-  const { data: rooms = [], isLoading, isError, error, refetch, isFetching } = useQuery<ChatRoom[]>({
+  const { data: rooms = [], isLoading, isError, error, refetch } = useQuery<ChatRoom[]>({
     queryKey: ['chatRooms'],
     queryFn: () => api.get<ChatRoom[]>(API_ENDPOINTS.chat.rooms),
   });
@@ -32,6 +32,9 @@ export default function ChatListScreen() {
 
     return (
       <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={`Open conversation with ${name}`}
+        accessibilityHint={item.lastMessagePreview || 'Start the conversation'}
         style={styles.roomItem}
         onPress={() => router.push(`/chat/${item.id}`)}
       >
@@ -40,10 +43,10 @@ export default function ChatListScreen() {
             <Image source={{ uri: photo }} style={styles.avatar} />
           ) : (
             <LinearGradient
-              colors={[COLORS.primaryViolet, COLORS.electricBlue]}
+              colors={GRADIENTS.gold}
               style={styles.avatar}
             >
-              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
+              <Text style={styles.avatarInitial}>
                 {name[0]?.toUpperCase()}
               </Text>
             </LinearGradient>
@@ -70,10 +73,10 @@ export default function ChatListScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()}>
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Messages</Text>
@@ -81,28 +84,21 @@ export default function ChatListScreen() {
         </View>
 
         {isLoading ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>Loading chats...</Text>
-          </View>
+          <View style={styles.stateWrap}><LoadingState label="Loading your conversations" /></View>
         ) : isError ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>⚠️</Text>
-            <Text style={styles.emptyTitle}>Unable to load chats</Text>
-            <Text style={styles.emptyText}>{getErrorMessage(error, 'Please check your connection and try again.')}</Text>
-            <NeonButton label="Retry" onPress={() => refetch()} loading={isFetching} variant="outline" style={{ marginTop: SPACING.md }} />
+          <View style={styles.stateWrap}>
+            <ErrorState title="Unable to load messages" description={getErrorMessage(error, 'Check your connection and try again.')} onRetry={() => refetch()} />
           </View>
         ) : rooms.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyEmoji}>💬</Text>
-            <Text style={styles.emptyTitle}>No messages yet</Text>
-            <Text style={styles.emptyText}>When you match with someone, you can chat here.</Text>
+          <View style={styles.stateWrap}>
+            <EmptyState title="Your conversations will appear here" description="When a connection becomes mutual, start with a thoughtful hello." />
           </View>
         ) : (
           <FlatList
             data={rooms}
             keyExtractor={(item) => item.id}
             renderItem={renderRoom}
-            contentContainerStyle={{ paddingBottom: SPACING.xl }}
+            contentContainerStyle={styles.listContent}
           />
         )}
       </SafeAreaView>
@@ -116,6 +112,7 @@ const styles = StyleSheet.create({
   backText: { color: COLORS.textSecondary, fontSize: 20 },
   title: { ...TYPOGRAPHY.h3 },
   roomItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder },
+  avatarInitial: { color: COLORS.background, fontSize: 18, fontWeight: '700' },
   avatarContainer: { position: 'relative', marginRight: SPACING.md },
   avatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   onlineDot: { position: 'absolute', bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.success, borderWidth: 2, borderColor: COLORS.background },
@@ -124,8 +121,6 @@ const styles = StyleSheet.create({
   roomName: { ...TYPOGRAPHY.body, fontWeight: '600' },
   roomTime: { ...TYPOGRAPHY.small, color: COLORS.textTertiary },
   lastMessage: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: SPACING.xl },
-  emptyEmoji: { fontSize: 60, marginBottom: SPACING.md },
-  emptyTitle: { ...TYPOGRAPHY.h4, marginBottom: SPACING.sm, textAlign: 'center' },
-  emptyText: { ...TYPOGRAPHY.bodySecondary, textAlign: 'center', lineHeight: 22 },
+  stateWrap: { flex: 1, justifyContent: 'center', padding: SPACING.xl, width: '100%', maxWidth: 520, alignSelf: 'center' },
+  listContent: { paddingBottom: SPACING.xl, width: '100%', maxWidth: 760, alignSelf: 'center' },
 });

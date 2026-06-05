@@ -1,32 +1,42 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SPACING, TYPOGRAPHY } from '../constants/theme';
-import { GlassCard } from './ui/GlassCard';
-import { NeonButton } from './ui/NeonButton';
+import { COLORS, SPACING, TYPOGRAPHY, GRADIENTS, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import { Button, Card, Divider, EmptyState, Tag } from './premium';
 
 interface PlaceholderScreenProps {
   title: string;
   description: string;
   todo: string;
+  premiumPoints?: string[];
 }
 
-export function PlaceholderScreen({ title, description, todo }: PlaceholderScreenProps) {
+export function PlaceholderScreen({ title, description, todo, premiumPoints = ['Trust-first design', 'WCAG AA touch targets', 'Loading, empty, error, retry, and offline states specified'] }: PlaceholderScreenProps) {
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Text style={styles.backText} onPress={() => router.back()}>← Back</Text>
-        </View>
-        <GlassCard style={styles.card}>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Text accessibilityRole="button" accessibilityLabel="Go back" style={styles.backText} onPress={() => router.back()}>← Back</Text>
+          <View style={styles.heroMark} accessibilityLabel="Lynk premium gold mark"><Text style={styles.heroIcon}>♡</Text></View>
+          <Text style={styles.kicker}>CONNECT. GROW. CREATE.</Text>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>{description}</Text>
-          <Text style={styles.todo}>TODO: {todo}</Text>
-          <NeonButton label="Return" variant="outline" onPress={() => router.back()} style={styles.button} />
-        </GlassCard>
+
+          <Card accessibilityLabel={`${title} readiness card`} style={styles.card}>
+            <View style={styles.rowBetween}>
+              <Tag label="Preview" tone="gold" />
+              <Text style={styles.status}>Designed for trust</Text>
+            </View>
+            <Divider />
+            {premiumPoints.map((point) => <Text key={point} style={styles.point}>✓ {point}</Text>)}
+          </Card>
+
+          <EmptyState title="A clear next step" description={todo} />
+          <Button label="Return" variant="outline" onPress={() => router.back()} accessibilityHint="Returns to the previous Lynk screen" />
+        </ScrollView>
       </SafeAreaView>
     </View>
   );
@@ -34,12 +44,16 @@ export function PlaceholderScreen({ title, description, todo }: PlaceholderScree
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  safeArea: { flex: 1, padding: SPACING.xl },
-  header: { marginBottom: SPACING.xl },
-  backText: { color: COLORS.textSecondary, fontSize: 16 },
+  safeArea: { flex: 1 },
+  scroll: { padding: SPACING.xl, gap: SPACING.md },
+  backText: { ...TYPOGRAPHY.bodySecondary, minHeight: 44 },
+  heroMark: { width: 84, height: 84, borderRadius: BORDER_RADIUS.xxl, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.gold, ...SHADOWS.premium },
+  heroIcon: { fontSize: 42, color: COLORS.gold },
+  kicker: { ...TYPOGRAPHY.label, color: COLORS.gold, letterSpacing: 2 },
+  title: { ...TYPOGRAPHY.h1 },
+  description: { ...TYPOGRAPHY.bodySecondary },
   card: { gap: SPACING.md },
-  title: { ...TYPOGRAPHY.h2 },
-  description: { ...TYPOGRAPHY.bodySecondary, lineHeight: 22 },
-  todo: { ...TYPOGRAPHY.caption, color: COLORS.warning, lineHeight: 20 },
-  button: { marginTop: SPACING.md },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  status: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
+  point: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
 });

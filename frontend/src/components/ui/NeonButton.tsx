@@ -4,11 +4,12 @@ import {
   Text,
   ViewStyle,
   TextStyle,
+  StyleProp,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SHADOWS, BORDER_RADIUS, TYPOGRAPHY } from '../../constants/theme';
+import { COLORS, SHADOWS, BORDER_RADIUS, GRADIENTS, SPACING } from '../../constants/theme';
 
 type Variant = 'primary' | 'gold' | 'neon' | 'outline' | 'ghost';
 
@@ -18,15 +19,17 @@ interface NeonButtonProps {
   variant?: Variant;
   disabled?: boolean;
   loading?: boolean;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
-const GRADIENT_MAP: Record<Variant, [string, string]> = {
-  primary: [COLORS.primaryViolet, COLORS.electricBlue],
-  gold: ['#FFD700', '#FFA500'],
-  neon: [COLORS.neonPink, COLORS.primaryViolet],
+const GRADIENT_MAP: Record<Variant, readonly [string, string, ...string[]]> = {
+  primary: [...GRADIENTS.primary],
+  gold: [...GRADIENTS.gold],
+  neon: [...GRADIENTS.neon],
   outline: ['transparent', 'transparent'],
   ghost: ['transparent', 'transparent'],
 };
@@ -40,8 +43,10 @@ export function NeonButton({
   style,
   textStyle,
   size = 'md',
+  accessibilityLabel,
+  accessibilityHint,
 }: NeonButtonProps) {
-  const heights = { sm: 40, md: 52, lg: 60 };
+  const heights = { sm: 44, md: 52, lg: 60 };
   const isOutline = variant === 'outline';
   const isGhost = variant === 'ghost';
 
@@ -53,12 +58,16 @@ export function NeonButton({
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.8}
       style={[
         styles.wrapper,
-        { height: heights[size], opacity: disabled ? 0.5 : 1 },
+        { height: heights[size], opacity: disabled || loading ? 0.6 : 1 },
         !isOutline && !isGhost && shadowStyle,
         style,
       ]}
@@ -71,7 +80,7 @@ export function NeonButton({
           styles.gradient,
           isOutline && {
             borderWidth: 2,
-            borderColor: COLORS.primaryViolet,
+            borderColor: COLORS.gold,
             backgroundColor: 'transparent',
           },
         ]}
@@ -103,7 +112,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.lg,
     borderRadius: BORDER_RADIUS.full,
   },
   label: {

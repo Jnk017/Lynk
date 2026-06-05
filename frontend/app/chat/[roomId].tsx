@@ -18,8 +18,9 @@ import * as SecureStore from 'expo-secure-store';
 import { api } from '../../src/services/api';
 import { API_ENDPOINTS } from '../../src/constants/api';
 import { WS_URL } from '../../src/constants/api';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../src/constants/theme';
+import { COLORS, TYPOGRAPHY, GRADIENTS, SPACING } from '../../src/constants/theme';
 import { GlassCard } from '../../src/components/ui/GlassCard';
+import { EmptyState, LoadingState } from '../../src/components/premium';
 import { NeonButton } from '../../src/components/ui/NeonButton';
 import { useAuth } from '../../src/providers/AuthProvider';
 import { ChatMessage } from '../../src/types/api';
@@ -117,15 +118,15 @@ export default function ChatRoomScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#0A0A0A', '#0D0D1A']} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={GRADIENTS.dark} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.back()}>
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
           <Text style={styles.headerName}>Chat</Text>
-          <TouchableOpacity>
-            <Text style={{ fontSize: 20 }}>⋯</Text>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Conversation options">
+            <Text style={{ fontSize: 20, color: COLORS.textPrimary }}>⋯</Text>
           </TouchableOpacity>
         </View>
 
@@ -147,13 +148,13 @@ export default function ChatRoomScreen() {
             data={messages}
             keyExtractor={(item) => item.id}
             renderItem={renderMessage}
-            contentContainerStyle={{ padding: SPACING.md }}
+            contentContainerStyle={styles.messageList}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
             ListEmptyComponent={
               isLoading ? (
-                <Text style={styles.emptyText}>Loading messages...</Text>
+                <View style={styles.stateInset}><LoadingState label="Loading messages" /></View>
               ) : (
-                <Text style={styles.emptyText}>No messages yet. Say hello ✨</Text>
+                <View style={styles.stateInset}><EmptyState title="Start with a thoughtful hello" description="Ask about a value, goal, or interest you share." /></View>
               )
             }
             ListFooterComponent={
@@ -167,7 +168,7 @@ export default function ChatRoomScreen() {
           )}
 
           <View style={styles.inputBar}>
-            <TouchableOpacity style={styles.attachBtn}>
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel="Attach media" style={styles.attachBtn}>
               <Text style={{ fontSize: 20 }}>📎</Text>
             </TouchableOpacity>
             <TextInput
@@ -176,18 +177,23 @@ export default function ChatRoomScreen() {
               onChangeText={setInput}
               placeholder="Write a message..."
               placeholderTextColor={COLORS.textTertiary}
+              accessibilityLabel="Message"
+              accessibilityHint="Write a message to this connection"
               multiline
               maxLength={2000}
               onFocus={() => socketRef.current?.emit('typing:start', { chatRoomId: roomId })}
               onBlur={() => socketRef.current?.emit('typing:stop', { chatRoomId: roomId })}
             />
             <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Send message"
+              accessibilityState={{ disabled: !input.trim() }}
               style={[styles.sendBtn, !input.trim() && { opacity: 0.4 }]}
               onPress={sendMessage}
               disabled={!input.trim()}
             >
               <LinearGradient
-                colors={[COLORS.primaryViolet, COLORS.electricBlue]}
+                colors={GRADIENTS.gold}
                 style={styles.sendGradient}
               >
                 <Text style={styles.sendIcon}>➤</Text>
@@ -205,24 +211,26 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder },
   backText: { color: COLORS.textSecondary, fontSize: 20 },
   headerName: { ...TYPOGRAPHY.h4 },
-  messageRow: { marginVertical: 4 },
+  messageList: { padding: SPACING.md, width: '100%', maxWidth: 760, alignSelf: 'center' },
+  messageRow: { marginVertical: SPACING.xs },
   myRow: { alignItems: 'flex-end' },
   theirRow: { alignItems: 'flex-start' },
   bubble: { maxWidth: '75%', padding: SPACING.md, borderRadius: 18 },
   myBubble: { backgroundColor: COLORS.primaryViolet, borderBottomRightRadius: 4 },
   theirBubble: { backgroundColor: COLORS.surface, borderBottomLeftRadius: 4 },
   messageText: { color: COLORS.textPrimary, fontSize: 15, lineHeight: 22 },
-  messageTime: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 4, textAlign: 'right' },
+  messageTime: { color: COLORS.textTertiary, fontSize: 11, marginTop: 4, textAlign: 'right' },
   typingIndicator: { padding: SPACING.sm },
   typingText: { color: COLORS.textTertiary, fontStyle: 'italic', fontSize: 13 },
   emptyText: { ...TYPOGRAPHY.bodySecondary, textAlign: 'center', marginTop: SPACING.xl },
+  stateInset: { padding: SPACING.xl },
   errorCard: { margin: SPACING.md },
   errorTitle: { ...TYPOGRAPHY.h4, color: COLORS.error, marginBottom: SPACING.sm },
   errorText: { color: COLORS.error, textAlign: 'center', marginHorizontal: SPACING.md, marginVertical: SPACING.sm },
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.glassBorder, gap: SPACING.sm },
-  attachBtn: { paddingBottom: SPACING.xs },
+  attachBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   input: { flex: 1, backgroundColor: COLORS.surface, borderRadius: 20, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, color: COLORS.textPrimary, fontSize: 15, maxHeight: 100 },
-  sendBtn: { width: 42, height: 42 },
-  sendGradient: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-  sendIcon: { color: '#fff', fontSize: 16 },
+  sendBtn: { width: 44, height: 44 },
+  sendGradient: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  sendIcon: { color: COLORS.background, fontSize: 16 },
 });
