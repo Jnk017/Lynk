@@ -9,7 +9,14 @@ export type FrontendObservabilityEvent =
   | "payment_created"
   | "subscription_started"
   | "referral_completed"
-  | "founder_joined";
+  | "founder_joined"
+  | "commitment_center_opened"
+  | "commitment_created_viewed"
+  | "commitment_history_opened"
+  | "commitment_benefits_opened"
+  | "proof_submission_started"
+  | "proof_submission_completed"
+  | "milestone_viewed";
 
 type EventProperties = Record<
   string,
