@@ -32,6 +32,7 @@ import { AuditLog } from './modules/audit-log/entities/audit-log.entity';
 import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
 import { Report } from './modules/moderation/entities/report.entity';
 import { UserBlock } from './modules/moderation/entities/user-block.entity';
+import { LegalAcceptance } from './modules/legal/entities/legal-acceptance.entity';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -56,6 +57,7 @@ import { AuditLogModule } from './modules/audit-log/audit-log.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ObservabilityModule } from './modules/observability/observability.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
+import { LegalModule } from './modules/legal/legal.module';
 
 @Module({
   imports: [
@@ -100,6 +102,7 @@ import { ModerationModule } from './modules/moderation/moderation.module';
           RefreshToken,
           Report,
           UserBlock,
+          LegalAcceptance,
         ],
         synchronize:
           configService.get<boolean>('database.synchronize') === true,
@@ -149,6 +152,7 @@ import { ModerationModule } from './modules/moderation/moderation.module';
     AdminModule,
     ObservabilityModule,
     ModerationModule,
+    LegalModule,
   ],
 })
 export class AppModule {}

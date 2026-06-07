@@ -28,7 +28,13 @@ interface User {
   piBalance: number;
   fiatBalance: number;
   isProfileComplete: boolean;
-  role?: 'user' | 'premium_user' | 'founder' | 'moderator' | 'admin' | 'super_admin';
+  role?:
+    | "user"
+    | "premium_user"
+    | "founder"
+    | "moderator"
+    | "admin"
+    | "super_admin";
 }
 
 interface AuthContextType {
@@ -49,6 +55,12 @@ interface RegisterData {
   displayName: string;
   referralCode?: string;
   gender?: string;
+  termsAccepted: boolean;
+  privacyAccepted: boolean;
+  ageConfirmed: boolean;
+  marketingConsent?: boolean;
+  language: "fr" | "en" | "es";
+  documentVersion: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
