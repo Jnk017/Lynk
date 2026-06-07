@@ -11,10 +11,16 @@ import { ReferralLog } from '../referral/entities/referral-log.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { AuditLogModule } from '../audit-log/audit-log.module';
 import { FounderModule } from '../founder/founder.module';
+import { LegalAcceptance } from '../legal/entities/legal-acceptance.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, ReferralLog, RefreshToken]),
+    TypeOrmModule.forFeature([
+      User,
+      ReferralLog,
+      RefreshToken,
+      LegalAcceptance,
+    ]),
     FounderModule,
     AuditLogModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),

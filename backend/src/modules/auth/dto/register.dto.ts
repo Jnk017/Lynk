@@ -8,9 +8,12 @@ import {
   IsPhoneNumber,
   IsEnum,
   IsUUID,
+  IsBoolean,
+  IsIn,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Gender } from '../../../common/enums';
+import { LegalLanguage } from '../../legal/dto/legal.dto';
 
 export class RegisterDto {
   @ApiProperty({ required: false, example: '+33612345678' })
@@ -53,6 +56,36 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(Gender)
   gender?: Gender;
+
+  @ApiProperty({ description: 'Required acceptance of Terms of Service' })
+  @IsBoolean()
+  termsAccepted: boolean;
+
+  @ApiProperty({
+    description: 'Required acknowledgement of the Privacy Policy',
+  })
+  @IsBoolean()
+  privacyAccepted: boolean;
+
+  @ApiProperty({
+    description: 'Required confirmation that the user is at least 18',
+  })
+  @IsBoolean()
+  ageConfirmed: boolean;
+
+  @ApiProperty({ required: false, default: false })
+  @IsOptional()
+  @IsBoolean()
+  marketingConsent?: boolean;
+
+  @ApiProperty({ enum: LegalLanguage, default: LegalLanguage.FR })
+  @IsIn(Object.values(LegalLanguage))
+  language: LegalLanguage;
+
+  @ApiProperty({ example: '2.0' })
+  @IsString()
+  @MaxLength(20)
+  documentVersion: string;
 
   @ApiProperty({
     required: false,

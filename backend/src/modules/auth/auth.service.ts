@@ -23,6 +23,7 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { AuthSessionContext } from './types/auth-session-context';
 import { ObservabilityService } from '../observability/observability.service';
 import { ObservabilityEventName } from '../observability/observability-events';
+import { LegalAcceptance } from '../legal/entities/legal-acceptance.entity';
 
 interface JwtRefreshPayload {
   sub: string;
@@ -54,6 +55,11 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto, context: AuthSessionContext = {}) {
+    if (!dto.termsAccepted || !dto.privacyAccepted || !dto.ageConfirmed) {
+      throw new BadRequestException(
+        'Terms, Privacy Policy, and 18+ confirmation are required',
+      );
+    }
     if (!dto.email && !dto.phone) {
       throw new BadRequestException('Email or phone number is required');
     }
@@ -98,6 +104,22 @@ export class AuthService {
 
       const savedUser = await queryRunner.manager.save(user);
 
+      const acceptanceContext = {
+        userId: savedUser.id,
+        documentVersion: dto.documentVersion,
+        language: dto.language,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      };
+      await queryRunner.manager.save(LegalAcceptance, [
+        { ...acceptanceContext, documentType: 'terms' },
+        { ...acceptanceContext, documentType: 'privacy' },
+        { ...acceptanceContext, documentType: 'children-protection' },
+        ...(dto.marketingConsent
+          ? [{ ...acceptanceContext, documentType: 'marketing' }]
+          : []),
+      ]);
+
       await this.founderService.allocateFounderSlotWithManager(
         queryRunner.manager,
         savedUser.id,
@@ -113,6 +135,27 @@ export class AuthService {
 
       await queryRunner.commitTransaction();
 
+      for (const documentType of [
+        'terms',
+        'privacy',
+        'children-protection',
+        ...(dto.marketingConsent ? ['marketing'] : []),
+      ]) {
+        await this.auditLogService.record({
+          action: 'legal.acceptance',
+          actorUserId: savedUser.id,
+          targetType: 'legal_document',
+          targetId: documentType,
+          metadata: {
+            documentType,
+            documentVersion: dto.documentVersion,
+            language: dto.language,
+            ipAddress: context.ipAddress,
+            userAgent: context.userAgent,
+          },
+        });
+      }
+
       const tokens = await this.generateTokens(savedUser, {
         ...context,
         deviceId: dto.deviceId || context.deviceId,
@@ -120,7 +163,11 @@ export class AuthService {
       void this.observabilityService?.track(
         ObservabilityEventName.USER_REGISTERED,
         savedUser.id,
-        { method: 'password', hasReferral: Boolean(referredBy) },
+        {
+          method: 'password',
+          hasReferral: Boolean(referredBy),
+          legalVersion: dto.documentVersion,
+        },
       );
       return {
         user: this.sanitizeUser(savedUser),
@@ -179,6 +226,17 @@ export class AuthService {
     });
 
     if (!user) {
+      if (
+        !dto.termsAccepted ||
+        !dto.privacyAccepted ||
+        !dto.ageConfirmed ||
+        !dto.language ||
+        !dto.documentVersion
+      ) {
+        throw new BadRequestException(
+          'New Pi accounts require Terms, Privacy Policy, 18+ confirmation, language, and document version',
+        );
+      }
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();
       await queryRunner.startTransaction();
@@ -190,12 +248,48 @@ export class AuthService {
           referralCode: this.generateReferralCode(),
         });
 
+        const acceptanceContext = {
+          userId: user.id,
+          documentVersion: dto.documentVersion,
+          language: dto.language,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+        };
+        await queryRunner.manager.save(LegalAcceptance, [
+          { ...acceptanceContext, documentType: 'terms' },
+          { ...acceptanceContext, documentType: 'privacy' },
+          { ...acceptanceContext, documentType: 'children-protection' },
+          ...(dto.marketingConsent
+            ? [{ ...acceptanceContext, documentType: 'marketing' }]
+            : []),
+        ]);
+
         await this.founderService.allocateFounderSlotWithManager(
           queryRunner.manager,
           user.id,
         );
 
         await queryRunner.commitTransaction();
+        for (const documentType of [
+          'terms',
+          'privacy',
+          'children-protection',
+          ...(dto.marketingConsent ? ['marketing'] : []),
+        ]) {
+          await this.auditLogService.record({
+            action: 'legal.acceptance',
+            actorUserId: user.id,
+            targetType: 'legal_document',
+            targetId: documentType,
+            metadata: {
+              documentType,
+              documentVersion: dto.documentVersion,
+              language: dto.language,
+              ipAddress: context.ipAddress,
+              userAgent: context.userAgent,
+            },
+          });
+        }
         void this.observabilityService?.track(
           ObservabilityEventName.USER_REGISTERED,
           user.id,

@@ -184,6 +184,12 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @Column({ type: 'timestamp', nullable: true })
+  deletionRequestedAt?: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deletionScheduledFor?: Date | null;
+
   @DeleteDateColumn({ nullable: true })
   deletedAt: Date;
 }
