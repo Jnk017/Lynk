@@ -256,10 +256,10 @@ export class ReferralService {
           type: TransactionType.REVENUE_SHARE,
           currency: TransactionCurrency.USD,
           amount: preview.dividendPerFounder,
-          provider: TransactionProvider.INTERNAL,
+          provider: TransactionProvider.PI_NETWORK,
           status: TransactionStatus.COMPLETED,
           externalRef,
-          metadata: { period, poolId: pool.id },
+          metadata: { period, poolId: pool.id, provider: 'internal' },
         });
       }
 
@@ -296,10 +296,13 @@ export class ReferralService {
         distributionCount: distributions.length,
         revenueSharingPercentage: preview.revenueSharingPercentage,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       await queryRunner.rollbackTransaction();
       await this.markRevenuePoolFailed(queryRunner.manager, period);
-      this.logger.error(`Revenue distribution failed for ${period}: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Revenue distribution failed for ${period}: ${errorMessage}`,
+      );
       throw error;
     } finally {
       await queryRunner.release();
