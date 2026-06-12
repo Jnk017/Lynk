@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddPawapayAndBinancePayProviders1782000000000
-  implements MigrationInterface
-{
+export class AddPawapayAndBinancePayProviders1782000000000 implements MigrationInterface {
   name = 'AddPawapayAndBinancePayProviders1782000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
