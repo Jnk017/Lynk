@@ -125,8 +125,20 @@ erDiagram
 | AI | OpenAI GPT-4o-mini (coach, bio, ice-breakers) |
 | Verification | AWS Rekognition (liveness detection) |
 | Notifications | Firebase Cloud Messaging |
-| Payments | Stripe + Pi Network SDK + AvadaPay + Moneroo |
+| Payments | Pi Network SDK + Pawapay + Binance Pay |
 | Infrastructure | Docker + Docker Compose |
+
+---
+
+## 💳 Supported Payment Architecture
+
+Lynk supports exactly three payment modes:
+
+- **Pi Network** — Pi wallet authentication, Pi payment verification, staking and Web3 economy flows.
+- **Pawapay** — Mobile Money payment rail for supported African markets.
+- **Binance Pay** — Crypto payment rail for international settlement and merchant-style payments.
+
+Removed payment targets are not part of the active product architecture.
 
 ---
 
@@ -145,7 +157,7 @@ lynk/
 │   │       ├── verification/ # AWS Rekognition liveness + KYC
 │   │       ├── matchmaking/  # Swipe engine, AI Matchmaker
 │   │       ├── chat/         # WebSocket chat, E2E encryption
-│   │       ├── payment/      # Stripe, Pi, AvadaPay, Moneroo
+│   │       ├── payment/      # Pi Network, Pawapay, Binance Pay
 │   │       ├── subscription/ # Plans seeding & management
 │   │       ├── referral/     # Referral + monthly revenue distribution
 │   │       ├── staking/      # Anti-ghosting date staking
@@ -263,9 +275,8 @@ UI style: **Dark Premium Glassmorphism** — blur cards, neon borders, smooth Re
 | `OPENAI_API_KEY` | AI coach + bio + moderation |
 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | S3 uploads + Rekognition |
 | `FIREBASE_*` | Push notifications |
-| `STRIPE_SECRET_KEY` | Card payments |
 | `PI_API_KEY` | Pi Network auth & payments |
-| `AVADAPAY_API_KEY` | Mobile Money (Africa) |
-| `MONEROO_API_KEY` | Additional payment gateway |
+| `PAWAPAY_API_KEY` | Pawapay Mobile Money payments |
+| `BINANCE_PAY_API_KEY` | Binance Pay crypto payments |
 
 Set these in your `.env` file or as Docker environment variables.
