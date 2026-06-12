@@ -299,7 +299,7 @@ export class ReferralService {
     } catch (error: unknown) {
       await queryRunner.rollbackTransaction();
       await this.markRevenuePoolFailed(queryRunner.manager, period);
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown';
       this.logger.error(
         `Revenue distribution failed for ${period}: ${errorMessage}`,
       );
