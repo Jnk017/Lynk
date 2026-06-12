@@ -68,9 +68,8 @@ export enum TransactionCurrency {
 export enum TransactionProvider {
   PI_NETWORK = 'pi_network',
   STRIPE = 'stripe',
-  AVADAPAY = 'avadapay',
-  MONEROO = 'moneroo',
-  COINBASE_COMMERCE = 'coinbase_commerce',
+  PAWAPAY = 'pawapay',
+  BINANCE_PAY = 'binance_pay',
   INTERNAL = 'internal',
 }
 
