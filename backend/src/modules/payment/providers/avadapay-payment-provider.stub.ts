@@ -4,8 +4,8 @@ import { TransactionProvider } from '../../../common/enums';
 import { TestModePaymentProviderStub } from './test-mode-payment-provider.stub';
 
 @Injectable()
-export class AvadaPayPaymentProviderStub extends TestModePaymentProviderStub {
+export class PawapayPaymentProviderStub extends TestModePaymentProviderStub {
   constructor(configService: ConfigService) {
-    super(configService, TransactionProvider.AVADAPAY);
+    super(configService, TransactionProvider.PAWAPAY);
   }
 }
