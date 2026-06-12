@@ -48,8 +48,8 @@ export const API_ENDPOINTS = {
     subscribe: "/subscription/subscribe",
   },
   payment: {
-    stripeIntent: "/payment/stripe/intent",
     creditPi: "/payment/pi/verify",
+    providerCreate: (provider: string) => `/payment/providers/${provider}/create`,
     transactions: "/payment/transactions",
   },
   referral: {
