@@ -6,9 +6,8 @@ import { User } from '../user/entities/user.entity';
 import { PaymentService } from './payment.service';
 import { PaymentController } from './payment.controller';
 import { PiPaymentProvider } from './providers/pi-payment.provider';
-import { MonerooPaymentProviderStub } from './providers/moneroo-payment-provider.stub';
-import { AvadaPayPaymentProviderStub } from './providers/avadapay-payment-provider.stub';
-import { CoinbaseCommerceProviderStub } from './providers/coinbase-commerce-provider.stub';
+import { PawapayPaymentProviderStub } from './providers/pawapay-payment-provider.stub';
+import { BinancePayPaymentProviderStub } from './providers/binance-pay-payment-provider.stub';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Transaction, PaymentWebhookLog, User])],
@@ -16,9 +15,8 @@ import { CoinbaseCommerceProviderStub } from './providers/coinbase-commerce-prov
   providers: [
     PaymentService,
     PiPaymentProvider,
-    MonerooPaymentProviderStub,
-    AvadaPayPaymentProviderStub,
-    CoinbaseCommerceProviderStub,
+    PawapayPaymentProviderStub,
+    BinancePayPaymentProviderStub,
   ],
   exports: [PaymentService, TypeOrmModule],
 })
