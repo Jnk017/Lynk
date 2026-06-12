@@ -128,7 +128,9 @@ export class PaymentService {
     const existing = await this.transactionRepository.findOne({
       where: { externalRef: piPaymentId },
     });
-    if (existing) throw new BadRequestException('Transaction already processed');
+    if (existing) {
+      throw new BadRequestException('Transaction already processed');
+    }
     const verification = await this.piPaymentProvider.verifyPayment({
       externalRef: piPaymentId,
       expectedUserId: user.piWalletAddress,
