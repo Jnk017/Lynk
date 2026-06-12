@@ -1,36 +1,23 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Optional,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
-import Stripe = require('stripe');
-import { Transaction } from './entities/transaction.entity';
+import { Repository } from 'typeorm';
 import { PaymentWebhookLog } from './entities/payment-webhook-log.entity';
+import { Transaction } from './entities/transaction.entity';
+import { PaymentProvider, WebhookResult } from './providers/payment-provider.interface';
+import { PawapayPaymentProviderStub } from './providers/pawapay-payment-provider.stub';
+import { BinancePayPaymentProviderStub } from './providers/binance-pay-payment-provider.stub';
 import { User } from '../user/entities/user.entity';
+import { ObservabilityEventName } from '../observability/observability-events';
+import { ObservabilityService } from '../observability/observability.service';
 import {
-  TransactionType,
   TransactionCurrency,
   TransactionProvider,
   TransactionStatus,
+  TransactionType,
 } from '../../common/enums';
-import { PiPaymentProvider } from './providers/pi-payment.provider';
-import {
-  PaymentProvider,
-  WebhookResult,
-} from './providers/payment-provider.interface';
-import { PawapayPaymentProviderStub } from './providers/pawapay-payment-provider.stub';
-import { BinancePayPaymentProviderStub } from './providers/binance-pay-payment-provider.stub';
-import { ObservabilityService } from '../observability/observability.service';
-import { ObservabilityEventName } from '../observability/observability-events';
 
 @Injectable()
 export class PaymentService {
-  private stripe?: Stripe.Stripe;
   private readonly providers: Map<TransactionProvider, PaymentProvider>;
 
   constructor(
@@ -40,65 +27,14 @@ export class PaymentService {
     private webhookLogRepository: Repository<PaymentWebhookLog>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private configService: ConfigService,
-    private dataSource: DataSource,
-    private piPaymentProvider: PiPaymentProvider,
     private pawapayPaymentProvider: PawapayPaymentProviderStub,
     private binancePayPaymentProvider: BinancePayPaymentProviderStub,
-    @Optional()
     private observabilityService?: ObservabilityService,
   ) {
-    const stripeKey = this.configService.get<string>('stripe.secretKey');
-    if (stripeKey) {
-      this.stripe = new Stripe(stripeKey);
-    }
     this.providers = new Map<TransactionProvider, PaymentProvider>([
-      [TransactionProvider.PI_NETWORK, this.piPaymentProvider],
       [TransactionProvider.PAWAPAY, this.pawapayPaymentProvider],
       [TransactionProvider.BINANCE_PAY, this.binancePayPaymentProvider],
     ]);
-  }
-
-  async createStripePaymentIntent(
-    userId: string,
-    amountCents: number,
-    currency = 'usd',
-    type: TransactionType,
-  ) {
-    if (!this.stripe) throw new BadRequestException('Stripe not configured');
-
-    const paymentIntent = await this.stripe.paymentIntents.create({
-      amount: amountCents,
-      currency,
-      metadata: { userId, type },
-    });
-
-    const transaction = await this.transactionRepository.save({
-      userId,
-      type,
-      currency: TransactionCurrency.USD,
-      amount: amountCents / 100,
-      provider: TransactionProvider.STRIPE,
-      status: TransactionStatus.PENDING,
-      externalRef: paymentIntent.id,
-    });
-
-    void this.observabilityService?.track(
-      ObservabilityEventName.PAYMENT_CREATED,
-      userId,
-      {
-        transactionId: transaction.id,
-        provider: TransactionProvider.STRIPE,
-        amount: amountCents / 100,
-        currency,
-        type,
-      },
-    );
-
-    return {
-      clientSecret: paymentIntent.client_secret,
-      intentId: paymentIntent.id,
-    };
   }
 
   async createProviderPayment(
@@ -110,6 +46,9 @@ export class PaymentService {
     metadata: Record<string, unknown> = {},
   ) {
     this.assertValidAmount(amount);
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
     const paymentProvider = this.getPaymentProvider(provider);
     const result = await paymentProvider.createPayment({
       userId,
@@ -137,61 +76,6 @@ export class PaymentService {
     );
 
     return { ...result, transactionId: transaction.id };
-  }
-
-  async handleStripeWebhook(rawBody: Buffer, signature: string): Promise<void> {
-    if (!this.stripe) return;
-
-    const webhookSecret = this.configService.get<string>(
-      'stripe.webhookSecret',
-    );
-    if (!webhookSecret)
-      throw new BadRequestException('Stripe webhook secret not configured');
-
-    const event = this.stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      webhookSecret,
-    );
-
-    const duplicate = await this.webhookLogRepository.findOne({
-      where: {
-        provider: TransactionProvider.STRIPE,
-        externalEventId: event.id,
-      },
-    });
-    if (duplicate) return;
-
-    const log = await this.webhookLogRepository.save({
-      provider: TransactionProvider.STRIPE,
-      eventType: event.type,
-      externalRef: this.getStripeObjectId(event.data.object),
-      externalEventId: event.id,
-      payload: event as unknown as Record<string, unknown>,
-      processed: false,
-    });
-
-    if (event.type === 'payment_intent.succeeded') {
-      const intent = event.data.object as { id: string };
-      await this.transactionRepository.update(
-        { externalRef: intent.id },
-        { status: TransactionStatus.COMPLETED },
-      );
-      await this.webhookLogRepository.update(log.id, {
-        processed: true,
-        externalRef: intent.id,
-      });
-    } else if (event.type === 'payment_intent.payment_failed') {
-      const intent = event.data.object as { id: string };
-      await this.transactionRepository.update(
-        { externalRef: intent.id },
-        { status: TransactionStatus.FAILED },
-      );
-      await this.webhookLogRepository.update(log.id, {
-        processed: true,
-        externalRef: intent.id,
-      });
-    }
   }
 
   async handleProviderWebhook(
@@ -224,98 +108,6 @@ export class PaymentService {
     });
 
     return { ...webhookResult, duplicate: false, logId: log.id };
-  }
-
-  /**
-   * Credits a Pi payment only after server-side verification with the Pi API.
-   * The client never supplies the amount that will be credited.
-   */
-  private getStripeObjectId(object: unknown): string | undefined {
-    if (!object || typeof object !== 'object' || !('id' in object)) {
-      return undefined;
-    }
-
-    const { id } = object as { id?: unknown };
-    return typeof id === 'string' ? id : undefined;
-  }
-
-  async verifyAndCreditPiPayment(
-    userId: string,
-    piPaymentId: string,
-    type: TransactionType,
-  ): Promise<Transaction> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
-    if (!user.piWalletAddress) {
-      throw new BadRequestException(
-        'Pi wallet must be linked before verifying Pi payments',
-      );
-    }
-
-    const existing = await this.transactionRepository.findOne({
-      where: { externalRef: piPaymentId },
-    });
-    if (existing)
-      throw new BadRequestException('Transaction already processed');
-
-    const verification = await this.piPaymentProvider.verifyPayment({
-      externalRef: piPaymentId,
-      expectedUserId: user.piWalletAddress,
-    });
-    if (
-      !verification.verified ||
-      !verification.amount ||
-      verification.amount <= 0
-    ) {
-      throw new BadRequestException(
-        'Pi payment could not be verified server-side',
-      );
-    }
-
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      await queryRunner.query(
-        `SELECT pg_advisory_xact_lock(hashtext('lynk_payment_external_ref_' || $1))`,
-        [piPaymentId],
-      );
-
-      const existingInTransaction = await queryRunner.manager.findOne(
-        Transaction,
-        { where: { externalRef: piPaymentId } },
-      );
-      if (existingInTransaction) {
-        throw new BadRequestException('Transaction already processed');
-      }
-
-      await queryRunner.manager.increment(
-        User,
-        { id: userId },
-        'piBalance',
-        verification.amount,
-      );
-
-      const tx = await queryRunner.manager.save(Transaction, {
-        userId,
-        type,
-        currency: TransactionCurrency.PI,
-        amount: verification.amount,
-        provider: TransactionProvider.PI_NETWORK,
-        status: TransactionStatus.COMPLETED,
-        externalRef: piPaymentId,
-        metadata: { piVerification: verification.raw },
-      });
-
-      await queryRunner.commitTransaction();
-      return tx;
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
   }
 
   async getCompletedTransactionForUse(
@@ -358,6 +150,19 @@ export class PaymentService {
     });
   }
 
+  async getUserTransactions(
+    userId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<Transaction[]> {
+    return this.transactionRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+  }
+
   private getPaymentProvider(provider: TransactionProvider): PaymentProvider {
     const paymentProvider = this.providers.get(provider);
     if (!paymentProvider) {
@@ -385,18 +190,5 @@ export class PaymentService {
     return payload && typeof payload === 'object'
       ? (payload as Record<string, unknown>)
       : { value: payload };
-  }
-
-  async getUserTransactions(
-    userId: string,
-    page = 1,
-    limit = 20,
-  ): Promise<Transaction[]> {
-    return this.transactionRepository.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
   }
 }
