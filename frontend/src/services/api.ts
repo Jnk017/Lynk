@@ -49,9 +49,12 @@ class ApiService {
           try {
             const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
             const response = await axios.post(`${API_BASE_URL}/auth/refresh`, { refreshToken });
-            const { accessToken } = response.data;
+            const { accessToken, refreshToken: rotatedRefreshToken } = response.data;
 
             await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+            if (rotatedRefreshToken) {
+              await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, rotatedRefreshToken);
+            }
 
             this.refreshQueue.forEach((cb) => cb(accessToken));
             this.refreshQueue = [];

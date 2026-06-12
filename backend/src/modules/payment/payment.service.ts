@@ -23,9 +23,8 @@ import {
   PaymentProvider,
   WebhookResult,
 } from './providers/payment-provider.interface';
-import { MonerooPaymentProviderStub } from './providers/moneroo-payment-provider.stub';
-import { AvadaPayPaymentProviderStub } from './providers/avadapay-payment-provider.stub';
-import { CoinbaseCommerceProviderStub } from './providers/coinbase-commerce-provider.stub';
+import { PawapayPaymentProviderStub } from './providers/pawapay-payment-provider.stub';
+import { BinancePayPaymentProviderStub } from './providers/binance-pay-payment-provider.stub';
 import { ObservabilityService } from '../observability/observability.service';
 import { ObservabilityEventName } from '../observability/observability-events';
 
@@ -44,9 +43,8 @@ export class PaymentService {
     private configService: ConfigService,
     private dataSource: DataSource,
     private piPaymentProvider: PiPaymentProvider,
-    private monerooPaymentProvider: MonerooPaymentProviderStub,
-    private avadaPayPaymentProvider: AvadaPayPaymentProviderStub,
-    private coinbaseCommerceProvider: CoinbaseCommerceProviderStub,
+    private pawapayPaymentProvider: PawapayPaymentProviderStub,
+    private binancePayPaymentProvider: BinancePayPaymentProviderStub,
     @Optional()
     private observabilityService?: ObservabilityService,
   ) {
@@ -56,9 +54,8 @@ export class PaymentService {
     }
     this.providers = new Map<TransactionProvider, PaymentProvider>([
       [TransactionProvider.PI_NETWORK, this.piPaymentProvider],
-      [TransactionProvider.MONEROO, this.monerooPaymentProvider],
-      [TransactionProvider.AVADAPAY, this.avadaPayPaymentProvider],
-      [TransactionProvider.COINBASE_COMMERCE, this.coinbaseCommerceProvider],
+      [TransactionProvider.PAWAPAY, this.pawapayPaymentProvider],
+      [TransactionProvider.BINANCE_PAY, this.binancePayPaymentProvider],
     ]);
   }
 
