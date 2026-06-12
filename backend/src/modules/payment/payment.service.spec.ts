@@ -12,15 +12,15 @@ import {
   TransactionType,
 } from '../../common/enums';
 import { PiPaymentProvider } from './providers/pi-payment.provider';
-import { MonerooPaymentProviderStub } from './providers/moneroo-payment-provider.stub';
-import { AvadaPayPaymentProviderStub } from './providers/avadapay-payment-provider.stub';
-import { CoinbaseCommerceProviderStub } from './providers/coinbase-commerce-provider.stub';
+import { PawapayPaymentProviderStub } from './providers/pawapay-payment-provider.stub';
+import { BinancePayPaymentProviderStub } from './providers/binance-pay-payment-provider.stub';
 
 interface RepositoryMock<T extends object> {
   findOne: jest.Mock<Promise<T | null>, [unknown]>;
   save: jest.Mock<Promise<T>, [Partial<T>]>;
   update: jest.Mock<Promise<unknown>, [unknown, Partial<T>]>;
   find: jest.Mock<Promise<T[]>, [unknown?]>;
+  increment: jest.Mock<Promise<unknown>, [unknown, string, number]>;
 }
 
 function createRepositoryMock<T extends object>(): RepositoryMock<T> {
@@ -35,6 +35,9 @@ function createRepositoryMock<T extends object>(): RepositoryMock<T> {
       .fn<Promise<unknown>, [unknown, Partial<T>]>()
       .mockResolvedValue({ affected: 1 }),
     find: jest.fn<Promise<T[]>, [unknown?]>().mockResolvedValue([]),
+    increment: jest
+      .fn<Promise<unknown>, [unknown, string, number]>()
+      .mockResolvedValue({ affected: 1 }),
   };
 }
 
@@ -58,9 +61,8 @@ function createPaymentService(nodeEnv = 'development') {
     verifyPayment: jest.fn(),
     handleWebhook: jest.fn(),
   } as unknown as PiPaymentProvider;
-  const monerooProvider = new MonerooPaymentProviderStub(configService);
-  const avadaPayProvider = new AvadaPayPaymentProviderStub(configService);
-  const coinbaseProvider = new CoinbaseCommerceProviderStub(configService);
+  const pawapayProvider = new PawapayPaymentProviderStub(configService);
+  const binancePayProvider = new BinancePayPaymentProviderStub(configService);
 
   const service = new PaymentService(
     transactionRepository as unknown as Repository<Transaction>,
@@ -69,34 +71,33 @@ function createPaymentService(nodeEnv = 'development') {
     configService,
     {} as DataSource,
     piProvider,
-    monerooProvider,
-    avadaPayProvider,
-    coinbaseProvider,
+    pawapayProvider,
+    binancePayProvider,
   );
 
   return { service, transactionRepository, webhookLogRepository };
 }
 
 describe('Payment provider stubs', () => {
-  it('creates test-mode provider payments as pending transactions', async () => {
+  it('creates Pawapay test-mode provider payments as pending transactions', async () => {
     const { service, transactionRepository } = createPaymentService();
 
     const result = await service.createProviderPayment(
       'user-1',
-      TransactionProvider.MONEROO,
+      TransactionProvider.PAWAPAY,
       12.5,
       TransactionCurrency.USD,
       TransactionType.SUBSCRIPTION,
     );
 
-    expect(result.provider).toBe(TransactionProvider.MONEROO);
-    expect(result.externalRef).toContain('test_moneroo_user-1_');
+    expect(result.provider).toBe(TransactionProvider.PAWAPAY);
+    expect(result.externalRef).toContain('test_pawapay_user-1_');
     expect(result.transactionId).toBe('saved-id');
     expect(transactionRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-1',
         amount: 12.5,
-        provider: TransactionProvider.MONEROO,
+        provider: TransactionProvider.PAWAPAY,
         status: TransactionStatus.PENDING,
       }),
     );
@@ -108,7 +109,7 @@ describe('Payment provider stubs', () => {
     await expect(
       service.createProviderPayment(
         'user-1',
-        TransactionProvider.MONEROO,
+        TransactionProvider.PAWAPAY,
         0,
         TransactionCurrency.USD,
         TransactionType.SUBSCRIPTION,
@@ -122,7 +123,7 @@ describe('Payment provider stubs', () => {
     await expect(
       service.createProviderPayment(
         'user-1',
-        TransactionProvider.MONEROO,
+        TransactionProvider.PAWAPAY,
         10,
         TransactionCurrency.USD,
         TransactionType.SUBSCRIPTION,
@@ -130,30 +131,30 @@ describe('Payment provider stubs', () => {
     ).rejects.toThrow('provider stub is disabled in production');
   });
 
-  it('logs generic provider webhooks once using provider and external event id', async () => {
+  it('logs Binance Pay generic provider webhooks once using provider and external event id', async () => {
     const { service, webhookLogRepository } = createPaymentService();
 
     const result = await service.handleProviderWebhook(
-      TransactionProvider.COINBASE_COMMERCE,
+      TransactionProvider.BINANCE_PAY,
       {
         eventId: 'evt-1',
-        eventType: 'charge:confirmed',
-        externalRef: 'charge-1',
+        eventType: 'payment:confirmed',
+        externalRef: 'payment-1',
       },
       { 'x-test': 'true' },
     );
 
     expect(result).toMatchObject({
-      provider: TransactionProvider.COINBASE_COMMERCE,
+      provider: TransactionProvider.BINANCE_PAY,
       externalEventId: 'evt-1',
       duplicate: false,
       logId: 'saved-id',
     });
     expect(webhookLogRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
-        provider: TransactionProvider.COINBASE_COMMERCE,
+        provider: TransactionProvider.BINANCE_PAY,
         externalEventId: 'evt-1',
-        externalRef: 'charge-1',
+        externalRef: 'payment-1',
         processed: false,
       }),
     );
@@ -166,7 +167,7 @@ describe('Payment provider stubs', () => {
     } as PaymentWebhookLog);
 
     const result = await service.handleProviderWebhook(
-      TransactionProvider.AVADAPAY,
+      TransactionProvider.PAWAPAY,
       { eventId: 'evt-duplicate', externalRef: 'payment-1' },
       {},
     );
