@@ -4,8 +4,8 @@ import { TransactionProvider } from '../../../common/enums';
 import { TestModePaymentProviderStub } from './test-mode-payment-provider.stub';
 
 @Injectable()
-export class MonerooPaymentProviderStub extends TestModePaymentProviderStub {
+export class BinancePayPaymentProviderStub extends TestModePaymentProviderStub {
   constructor(configService: ConfigService) {
-    super(configService, TransactionProvider.MONEROO);
+    super(configService, TransactionProvider.BINANCE_PAY);
   }
 }
