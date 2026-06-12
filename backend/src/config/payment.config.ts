@@ -1,7 +1,8 @@
 export default () => ({
-  stripe: {
-    secretKey: process.env.STRIPE_SECRET_KEY || '',
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
+  pi: {
+    apiKey: process.env.PI_API_KEY || '',
+    sandbox: process.env.PI_SANDBOX === 'true',
+    apiBaseUrl: process.env.PI_API_BASE_URL || 'https://api.minepi.com/v2',
   },
   pawapay: {
     apiKey: process.env.PAWAPAY_API_KEY || '',
