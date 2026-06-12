@@ -66,6 +66,7 @@ export enum TransactionCurrency {
 }
 
 export enum TransactionProvider {
+  PI_NETWORK = 'pi_network',
   PAWAPAY = 'pawapay',
   BINANCE_PAY = 'binance_pay',
 }
