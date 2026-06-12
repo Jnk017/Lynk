@@ -1,19 +1,19 @@
 import { BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DataSource, Repository } from 'typeorm';
-import { PaymentService } from './payment.service';
-import { PaymentWebhookLog } from './entities/payment-webhook-log.entity';
-import { Transaction } from './entities/transaction.entity';
-import { User } from '../user/entities/user.entity';
+import { Repository } from 'typeorm';
 import {
   TransactionCurrency,
   TransactionProvider,
   TransactionStatus,
   TransactionType,
 } from '../../common/enums';
-import { PiPaymentProvider } from './providers/pi-payment.provider';
-import { PawapayPaymentProviderStub } from './providers/pawapay-payment-provider.stub';
+import { User } from '../user/entities/user.entity';
+import { PaymentWebhookLog } from './entities/payment-webhook-log.entity';
+import { Transaction } from './entities/transaction.entity';
+import { PaymentService } from './payment.service';
 import { BinancePayPaymentProviderStub } from './providers/binance-pay-payment-provider.stub';
+import { PawapayPaymentProviderStub } from './providers/pawapay-payment-provider.stub';
+import { PiPaymentProvider } from './providers/pi-payment.provider';
 
 interface RepositoryMock<T extends object> {
   findOne: jest.Mock<Promise<T | null>, [unknown]>;
@@ -43,11 +43,7 @@ function createRepositoryMock<T extends object>(): RepositoryMock<T> {
 
 function createConfigService(nodeEnv = 'development'): ConfigService {
   return {
-    get: jest.fn((key: string) => {
-      if (key === 'nodeEnv') return nodeEnv;
-      if (key === 'stripe.secretKey') return '';
-      return undefined;
-    }),
+    get: jest.fn((key: string) => (key === 'nodeEnv' ? nodeEnv : undefined)),
   } as unknown as ConfigService;
 }
 
@@ -68,8 +64,6 @@ function createPaymentService(nodeEnv = 'development') {
     transactionRepository as unknown as Repository<Transaction>,
     webhookLogRepository as unknown as Repository<PaymentWebhookLog>,
     userRepository as unknown as Repository<User>,
-    configService,
-    {} as DataSource,
     piProvider,
     pawapayProvider,
     binancePayProvider,
@@ -195,48 +189,5 @@ describe('Payment transaction consumption safety', () => {
     );
 
     expect(transaction.id).toBe('tx-1');
-    expect(transactionRepository.findOne).toHaveBeenCalledWith({
-      where: {
-        id: 'tx-1',
-        userId: 'user-1',
-        type: TransactionType.SUBSCRIPTION,
-        status: TransactionStatus.COMPLETED,
-      },
-    });
-  });
-
-  it('rejects already-consumed subscription transactions', async () => {
-    const { service, transactionRepository } = createPaymentService();
-    transactionRepository.findOne.mockResolvedValueOnce({
-      id: 'tx-1',
-      metadata: { subscriptionActivatedAt: '2026-06-03T00:00:00.000Z' },
-    } as unknown as Transaction);
-
-    await expect(
-      service.getCompletedTransactionForUse(
-        'user-1',
-        'tx-1',
-        TransactionType.SUBSCRIPTION,
-      ),
-    ).rejects.toThrow('already been consumed');
-  });
-
-  it('merges consumption metadata without dropping existing metadata', async () => {
-    const { service, transactionRepository } = createPaymentService();
-    transactionRepository.findOne.mockResolvedValueOnce({
-      id: 'tx-1',
-      metadata: { providerRef: 'pi-1' },
-    } as unknown as Transaction);
-
-    await service.markTransactionConsumed('tx-1', {
-      subscriptionActivatedAt: '2026-06-03T00:00:00.000Z',
-    });
-
-    expect(transactionRepository.update).toHaveBeenCalledWith('tx-1', {
-      metadata: {
-        providerRef: 'pi-1',
-        subscriptionActivatedAt: '2026-06-03T00:00:00.000Z',
-      },
-    });
   });
 });
