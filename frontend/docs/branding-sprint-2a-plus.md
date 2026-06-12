@@ -77,7 +77,7 @@ Existing UI components retained and token-aligned:
 - **Discovery:** premium branded shell until feed expansion.
 - **Chat List/Room:** token-compatible chat experience with current backend preserved.
 - **Profile/Profile Edit:** premium shell and existing profile dashboard retained.
-- **Verification/Referral/Subscription/Marriage/Staking/Admin-adjacent routes:** branded readiness shells with clear deferred-provider messaging and no payment integration.
+- **Verification/Referral/Subscription/Marriage/Staking/Admin-adjacent routes:** branded readiness shells with clear deferred-provider messaging.
 
 ## 5. UX Improvements Summary
 
@@ -130,15 +130,15 @@ Remaining accessibility work:
 - Some legacy screens still contain inline style values that should be migrated incrementally.
 - Expo export can be sensitive to environment and native dependency versions; validate on CI and local devices.
 - Real app screenshots should be captured after design QA on physical Android and iOS devices.
-- Payment/provider screens are intentionally non-integrated and must remain gated until Sprint 3.
+- Payment/provider screens must remain gated until the production payment state machine is fully implemented.
 
 ## 10. Recommended Next Sprint
 
 **SPRINT 3 — Payment Infrastructure & Provider Integration**
 
 Recommended sequence:
-1. Provider architecture and threat model.
+1. Provider architecture and threat model for Pi Network, Pawapay and Binance Pay.
 2. Payment state machine and reconciliation requirements.
-3. Stripe/Pi/Mobile Money/Moneroo/AvadaPay/Coinbase provider prioritization.
-4. Sandbox integration only.
-5. Full financial QA, audit logging, rollback, and user-facing receipts.
+3. Sandbox integration for Pawapay and Binance Pay.
+4. Pi Network contract tests against sandbox credentials.
+5. Full financial QA, audit logging, rollback, reconciliation and user-facing receipts.
