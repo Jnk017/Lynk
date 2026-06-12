@@ -3,16 +3,12 @@ export default () => ({
     secretKey: process.env.STRIPE_SECRET_KEY || '',
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
   },
-  avadapay: {
-    apiKey: process.env.AVADAPAY_API_KEY || '',
-    baseUrl: process.env.AVADAPAY_BASE_URL || 'https://api.avadapay.com',
+  pawapay: {
+    apiKey: process.env.PAWAPAY_API_KEY || '',
+    baseUrl: process.env.PAWAPAY_BASE_URL || 'https://api.pawapay.com',
   },
-  moneroo: {
-    apiKey: process.env.MONEROO_API_KEY || '',
-    baseUrl: process.env.MONEROO_BASE_URL || 'https://api.moneroo.io',
-  },
-  coinbaseCommerce: {
-    apiKey: process.env.COINBASE_COMMERCE_API_KEY || '',
-    webhookSecret: process.env.COINBASE_COMMERCE_WEBHOOK_SECRET || '',
+  binancePay: {
+    apiKey: process.env.BINANCE_PAY_API_KEY || '',
+    baseUrl: process.env.BINANCE_PAY_BASE_URL || 'https://api.binance.com',
   },
 });
