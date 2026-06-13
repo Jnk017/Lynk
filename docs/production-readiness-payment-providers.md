@@ -1,45 +1,52 @@
-# Production readiness payment provider changes
+# Lynk production payment providers
 
-This branch prepares Lynk for a cleaner production payment surface.
+This document defines the production payment surface for Lynk after the payment-provider cleanup.
 
-## Scope
+## Supported payment modes
 
-- Retire the legacy provider targets: Moneroo, AvadaPay and Coinbase Commerce.
-- Introduce Pawapay and Binance Pay as the next payment provider targets.
-- Document the required follow-up implementation steps before production rollout.
+Lynk supports exactly three payment modes:
 
-## Required backend changes for final implementation
+1. **Pi Network**
+   - Pi wallet authentication.
+   - Server-side Pi payment verification.
+   - Pi balance crediting.
+   - Web3 staking and ecosystem flows.
 
-1. Replace `TransactionProvider` values for legacy providers with:
-   - `pawapay`
-   - `binance_pay`
-2. Register the new provider classes in `PaymentModule`.
-3. Wire the provider map in `PaymentService` to only expose active providers.
-4. Add a TypeORM migration that extends `transaction_provider_enum` with `pawapay` and `binance_pay`.
-5. Keep old enum values in PostgreSQL only for historical records; do not expose them in new code.
-6. Update `.env.example` with:
-   - `PAWAPAY_API_KEY`
-   - `PAWAPAY_BASE_URL`
-   - `BINANCE_PAY_API_KEY`
-   - `BINANCE_PAY_BASE_URL`
-7. Remove old provider environment variables.
+2. **Pawapay**
+   - Mobile Money-oriented payment rail for supported African markets.
+   - Intended for fiat cash-in and local-market payments.
+   - Must use provider-side status verification and idempotent webhook handling before production rollout.
 
-## Required frontend changes
+3. **Binance Pay**
+   - Crypto payment rail for international and merchant-style payments.
+   - Must use signed provider requests, webhook signature verification and reconciliation before production rollout.
 
-The mobile API client must persist both tokens returned by `/auth/refresh`.
-The backend rotates refresh tokens, so storing only the new access token breaks the next refresh attempt.
+## Removed payment targets
 
-## Security note
+The following providers are not part of Lynk's active payment architecture:
 
-Production must not rely on provider stubs. Pawapay and Binance Pay require real implementations with:
+- Stripe
+- Moneroo
+- AvadaPay
+- Flutterwave
+- Coinbase Commerce
 
-- request signing or bearer authentication;
+They must not be exposed by the backend payment module, frontend endpoint constants, environment templates or production documentation as active payment options.
+
+## Required production controls
+
+Before production launch, Pawapay and Binance Pay integrations must include:
+
+- authenticated provider API calls;
 - webhook signature verification;
 - idempotent webhook processing;
-- provider-side status verification;
+- provider-side transaction status verification;
 - explicit transaction state transitions;
-- integration tests for success, failure, duplicate webhook and replay attempts.
+- reconciliation reports;
+- integration tests for success, failure, duplicate webhook and replay scenarios.
 
-## Review status
+## Current status
 
-This PR is opened as a review branch. Do not merge until the provider implementations and CI checks are complete.
+- Pi Network remains active as a first-class Web3 payment rail.
+- Pawapay and Binance Pay are the only non-Pi provider targets.
+- Legacy provider references should be treated as historical migration context only and not as active product scope.
