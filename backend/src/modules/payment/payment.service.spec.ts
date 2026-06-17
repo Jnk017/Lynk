@@ -60,6 +60,9 @@ function createPaymentService(nodeEnv = 'development') {
   const pawapayProvider = new PawapayPaymentProviderStub(configService);
   const binancePayProvider = new BinancePayPaymentProviderStub(configService);
 
+  const auditLogService = {
+    record: jest.fn().mockResolvedValue({ id: 'audit-id' }),
+  };
   const service = new PaymentService(
     transactionRepository as unknown as Repository<Transaction>,
     webhookLogRepository as unknown as Repository<PaymentWebhookLog>,
@@ -67,9 +70,16 @@ function createPaymentService(nodeEnv = 'development') {
     piProvider,
     pawapayProvider,
     binancePayProvider,
+    undefined,
+    auditLogService as never,
   );
 
-  return { service, transactionRepository, webhookLogRepository };
+  return {
+    service,
+    transactionRepository,
+    webhookLogRepository,
+    auditLogService,
+  };
 }
 
 describe('Payment provider stubs', () => {
@@ -111,7 +121,7 @@ describe('Payment provider stubs', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('disables unfinished providers in production', async () => {
+  it('requires provider credentials in production', async () => {
     const { service } = createPaymentService('production');
 
     await expect(
@@ -122,7 +132,7 @@ describe('Payment provider stubs', () => {
         TransactionCurrency.USD,
         TransactionType.SUBSCRIPTION,
       ),
-    ).rejects.toThrow('provider stub is disabled in production');
+    ).rejects.toThrow('provider credentials are required in production');
   });
 
   it('logs Binance Pay generic provider webhooks once using provider and external event id', async () => {
@@ -155,7 +165,8 @@ describe('Payment provider stubs', () => {
   });
 
   it('does not process duplicate provider webhook event ids twice', async () => {
-    const { service, webhookLogRepository } = createPaymentService();
+    const { service, webhookLogRepository, auditLogService } =
+      createPaymentService();
     webhookLogRepository.findOne.mockResolvedValueOnce({
       id: 'existing-log',
     } as PaymentWebhookLog);
@@ -168,6 +179,11 @@ describe('Payment provider stubs', () => {
 
     expect(result).toMatchObject({ duplicate: true, logId: 'existing-log' });
     expect(webhookLogRepository.save).not.toHaveBeenCalled();
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'payment.webhook_duplicate_rejected',
+      }),
+    );
   });
 });
 
@@ -189,5 +205,38 @@ describe('Payment transaction consumption safety', () => {
     );
 
     expect(transaction.id).toBe('tx-1');
+  });
+});
+
+describe('Payment audit logging', () => {
+  it('writes an audit log when a webhook completes a transaction', async () => {
+    const { service, transactionRepository, auditLogService } =
+      createPaymentService();
+    transactionRepository.findOne.mockResolvedValueOnce({
+      id: 'tx-1',
+      userId: 'user-1',
+      externalRef: 'payment-1',
+      provider: TransactionProvider.BINANCE_PAY,
+      status: TransactionStatus.PROCESSING,
+      metadata: {},
+    } as Transaction);
+
+    await service.handleProviderWebhook(
+      TransactionProvider.BINANCE_PAY,
+      {
+        eventId: 'evt-complete',
+        eventType: 'payment_completed',
+        externalRef: 'payment-1',
+      },
+      {},
+    );
+
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'payment.completed',
+        actorUserId: 'user-1',
+        targetId: 'tx-1',
+      }),
+    );
   });
 });

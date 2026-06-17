@@ -1,12 +1,13 @@
 import {
+  Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
-  Column,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 
@@ -34,4 +35,7 @@ export class UserBlock {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date;
 }

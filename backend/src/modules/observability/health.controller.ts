@@ -12,4 +12,16 @@ export class HealthController {
   check() {
     return this.healthService.check();
   }
+
+  @Get('db')
+  @ApiOperation({ summary: 'PostgreSQL healthcheck' })
+  checkDatabase() {
+    return this.healthService.checkDatabase();
+  }
+
+  @Get('redis')
+  @ApiOperation({ summary: 'Redis healthcheck' })
+  checkRedis() {
+    return this.healthService.checkRedis();
+  }
 }
