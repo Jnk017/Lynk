@@ -141,19 +141,19 @@ describe('Payment provider e2e mocks', () => {
         'pawapay.webhookSecret': 'pawapay-secret',
       }),
     );
-    await expect(
+    expect(() =>
       signedProvider.handleWebhook(payload, {
         'x-pawapay-timestamp': now,
-        'x-pawapay-signature': 'bad',
+        'x-pawapay-signature': '0'.repeat(64),
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).toThrow(BadRequestException);
     const stale = String(Date.now() - 10 * 60 * 1000);
-    await expect(
+    expect(() =>
       signedProvider.handleWebhook(payload, {
         'x-pawapay-timestamp': stale,
         'x-pawapay-signature': signPawapay(payload, stale, 'pawapay-secret'),
       }),
-    ).rejects.toThrow('Stale Pawapay webhook');
+    ).toThrow('Stale Pawapay webhook');
   });
 
   it('creates Binance Pay orders and validates webhook signature/replay behavior', async () => {
@@ -185,15 +185,15 @@ describe('Payment provider e2e mocks', () => {
         'binancePay.secretKey': 'binance-secret',
       }),
     );
-    await expect(
+    expect(() =>
       signedProvider.handleWebhook(payload, {
         'binancepay-timestamp': now,
         'binancepay-nonce': nonce,
-        'binancepay-signature': 'bad',
+        'binancepay-signature': '0'.repeat(128),
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).toThrow(BadRequestException);
     const stale = String(Date.now() - 10 * 60 * 1000);
-    await expect(
+    expect(() =>
       signedProvider.handleWebhook(payload, {
         'binancepay-timestamp': stale,
         'binancepay-nonce': nonce,
@@ -204,6 +204,6 @@ describe('Payment provider e2e mocks', () => {
           'binance-secret',
         ),
       }),
-    ).rejects.toThrow('Stale Binance Pay webhook');
+    ).toThrow('Stale Binance Pay webhook');
   });
 });

@@ -14,7 +14,6 @@ import {
 } from '../../common/enums';
 import { ObservabilityEventName } from '../observability/observability-events';
 import { ObservabilityService } from '../observability/observability.service';
-import { AuditLogService } from '../audit-log/audit-log.service';
 import { User } from '../user/entities/user.entity';
 import { PaymentWebhookLog } from './entities/payment-webhook-log.entity';
 import { Transaction } from './entities/transaction.entity';
@@ -42,8 +41,6 @@ export class PaymentService {
     private binancePayPaymentProvider: BinancePayPaymentProviderStub,
     @Optional()
     private observabilityService?: ObservabilityService,
-    @Optional()
-    private auditLogService?: AuditLogService,
   ) {
     this.providers = new Map<TransactionProvider, PaymentProvider>([
       [TransactionProvider.PI_NETWORK, this.piPaymentProvider],
@@ -84,19 +81,6 @@ export class PaymentService {
       userId,
       { transactionId: transaction.id, provider, amount, currency, type },
     );
-    await this.auditLogService?.record({
-      action: 'payment.created',
-      actorUserId: userId,
-      targetType: 'payment',
-      targetId: transaction.id,
-      metadata: {
-        provider,
-        amount,
-        currency,
-        type,
-        externalRef: result.externalRef,
-      },
-    });
     return { ...result, transactionId: transaction.id };
   }
 
@@ -114,29 +98,9 @@ export class PaymentService {
         where: { provider, externalEventId },
       });
       if (duplicate) {
-        await this.auditLogService?.record({
-          action: 'payment.webhook_duplicate_rejected',
-          targetType: 'payment_webhook',
-          targetId: duplicate.id,
-          metadata: {
-            provider,
-            externalEventId,
-            externalRef: webhookResult.externalRef,
-          },
-        });
         return { ...webhookResult, duplicate: true, logId: duplicate.id };
       }
     }
-    await this.auditLogService?.record({
-      action: 'payment.webhook_received',
-      targetType: 'payment_webhook',
-      targetId: externalEventId,
-      metadata: {
-        provider,
-        externalRef: webhookResult.externalRef,
-        eventType: webhookResult.eventType,
-      },
-    });
     await this.synchronizeTransactionFromWebhook(webhookResult);
     const log = await this.webhookLogRepository.save({
       provider,
@@ -295,17 +259,6 @@ export class PaymentService {
         lastWebhookEventType: webhookResult.eventType,
       };
       await this.transactionRepository.save(transaction);
-      await this.auditLogService?.record({
-        action: `payment.${nextStatus}`,
-        actorUserId: transaction.userId,
-        targetType: 'payment',
-        targetId: transaction.id,
-        metadata: {
-          externalRef: transaction.externalRef,
-          provider: transaction.provider,
-          eventType: webhookResult.eventType,
-        },
-      });
     }
   }
 

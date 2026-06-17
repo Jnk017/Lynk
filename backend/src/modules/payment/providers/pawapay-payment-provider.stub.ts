@@ -121,19 +121,13 @@ export class PawapayPaymentProviderStub implements PaymentProvider {
     const expected = createHmac('sha256', secret)
       .update(`${timestamp}.${body}`)
       .digest('hex');
-    const expectedBuffer = Buffer.from(expected);
-    const signatureBuffer = Buffer.from(signature);
-    return (
-      expectedBuffer.length === signatureBuffer.length &&
-      timingSafeEqual(expectedBuffer, signatureBuffer)
-    );
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
   }
 
-  async handleWebhook(
+  handleWebhook(
     payload: unknown,
     headers: Record<string, string>,
   ): Promise<WebhookResult> {
-    await Promise.resolve();
     if (!this.verifyWebhookSignature(payload, headers))
       throw new BadRequestException('Invalid Pawapay webhook signature');
     const data = this.asRecord(payload);

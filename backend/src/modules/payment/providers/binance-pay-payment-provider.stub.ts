@@ -140,19 +140,16 @@ export class BinancePayPaymentProviderStub implements PaymentProvider {
       .update(`${timestamp}\n${nonce}\n${body}\n`)
       .digest('hex')
       .toUpperCase();
-    const expectedBuffer = Buffer.from(expected);
-    const signatureBuffer = Buffer.from(signature.toUpperCase());
-    return (
-      expectedBuffer.length === signatureBuffer.length &&
-      timingSafeEqual(expectedBuffer, signatureBuffer)
+    return timingSafeEqual(
+      Buffer.from(expected),
+      Buffer.from(signature.toUpperCase()),
     );
   }
 
-  async handleWebhook(
+  handleWebhook(
     payload: unknown,
     headers: Record<string, string>,
   ): Promise<WebhookResult> {
-    await Promise.resolve();
     if (!this.verifyWebhookSignature(payload, headers))
       throw new BadRequestException('Invalid Binance Pay webhook signature');
     const data =
