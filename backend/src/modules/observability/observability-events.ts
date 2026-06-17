@@ -1,5 +1,7 @@
 export enum ObservabilityEventName {
   USER_REGISTERED = 'user_registered',
+  REGISTRATION_COMPLETED = 'registration_completed',
+  LOGIN_COMPLETED = 'login_completed',
   ONBOARDING_COMPLETED = 'onboarding_completed',
   PROFILE_VERIFIED = 'profile_verified',
   SWIPE_CREATED = 'swipe_created',
@@ -10,6 +12,8 @@ export enum ObservabilityEventName {
   SUBSCRIPTION_STARTED = 'subscription_started',
   REFERRAL_COMPLETED = 'referral_completed',
   FOUNDER_JOINED = 'founder_joined',
+  FOUNDER_ACTIVATED = 'founder_activated',
+  PAYMENT_COMPLETED = 'payment_completed',
   REPORT_CREATED = 'report_created',
   REPORT_SUBMITTED = 'report_submitted',
   REPORT_RESOLVED = 'report_resolved',

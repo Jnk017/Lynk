@@ -44,13 +44,14 @@ export class HealthService {
     };
   }
 
-  private async checkDatabase(): Promise<ComponentHealth> {
+  async checkDatabase(): Promise<ComponentHealth & { timestamp: string }> {
     try {
       await this.dataSource.query('SELECT 1');
-      return { status: 'ok' };
+      return { status: 'ok', timestamp: new Date().toISOString() };
     } catch (error) {
       return {
         status: 'down',
+        timestamp: new Date().toISOString(),
         details: {
           message: error instanceof Error ? error.message : 'unknown',
         },
@@ -58,16 +59,25 @@ export class HealthService {
     }
   }
 
-  private async checkRedis(): Promise<ComponentHealth> {
+  async checkRedis(): Promise<ComponentHealth & { timestamp: string }> {
     try {
       if (!this.redis) {
-        return { status: 'degraded', details: { configured: false } };
+        return {
+          status: 'degraded',
+          timestamp: new Date().toISOString(),
+          details: { configured: false },
+        };
       }
       const pong = await this.redis.ping();
-      return { status: pong === 'PONG' ? 'ok' : 'degraded', details: { pong } };
+      return {
+        status: pong === 'PONG' ? 'ok' : 'degraded',
+        timestamp: new Date().toISOString(),
+        details: { pong },
+      };
     } catch (error) {
       return {
         status: 'down',
+        timestamp: new Date().toISOString(),
         details: {
           message: error instanceof Error ? error.message : 'unknown',
         },

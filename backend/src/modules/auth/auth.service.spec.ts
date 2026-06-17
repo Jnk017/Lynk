@@ -24,6 +24,7 @@ interface RepositoryMock<T extends object> {
   findOne: jest.Mock<Promise<T | null>, [unknown]>;
   save: jest.Mock<Promise<T>, [Partial<T>]>;
   update: jest.Mock<Promise<UpdateResult>, [unknown, Partial<T>]>;
+  find?: jest.Mock<Promise<T[]>, [unknown?]>;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -134,6 +135,11 @@ describe('AuthService refresh token rotation', () => {
         tokenStore.set(token.id, token);
         return Promise.resolve(token);
       }),
+      find: jest.fn(() =>
+        Promise.resolve(
+          [...tokenStore.values()].filter((token) => !token.revokedAt),
+        ),
+      ),
       update: jest.fn((criteria: unknown, partial: Partial<RefreshToken>) => {
         if (typeof criteria === 'string') {
           const token = tokenStore.get(criteria);
@@ -234,5 +240,61 @@ describe('AuthService refresh token rotation', () => {
     await service.logout(loginResult.refreshToken);
 
     expect(storedToken.revokedAt).toBeInstanceOf(Date);
+  });
+
+  it('rejects explicitly revoked refresh tokens', async () => {
+    const loginResult = await service.login(
+      { email: user.email, password: 'ValidPassword123!', deviceId },
+      { deviceId },
+    );
+    const storedToken = [...tokenStore.values()][0];
+    storedToken.revokedAt = new Date();
+
+    await expect(
+      service.refreshTokens(loginResult.refreshToken, { deviceId }),
+    ).rejects.toThrow('Refresh token has been revoked');
+  });
+
+  it('revokes all active user sessions on logout-all and writes audit log', async () => {
+    await service.login(
+      { email: user.email, password: 'ValidPassword123!', deviceId },
+      { deviceId },
+    );
+    await service.login(
+      {
+        email: user.email,
+        password: 'ValidPassword123!',
+        deviceId: '550e8400-e29b-41d4-a716-446655440001',
+      },
+      { deviceId: '550e8400-e29b-41d4-a716-446655440001' },
+    );
+
+    await service.logoutAllDevices(user.id, {
+      userAgent: 'jest',
+      ipAddress: '127.0.0.1',
+    });
+
+    expect([...tokenStore.values()].every((token) => token.revokedAt)).toBe(
+      true,
+    );
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'auth.logout_all',
+        actorUserId: user.id,
+      }),
+    );
+  });
+
+  it('lists active sessions without exposing token hashes', async () => {
+    await service.login(
+      { email: user.email, password: 'ValidPassword123!', deviceId },
+      { deviceId, userAgent: 'jest' },
+    );
+
+    const sessions = await service.listSessions(user.id);
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toMatchObject({ deviceId, userAgent: 'jest' });
+    expect(sessions[0]).not.toHaveProperty('tokenHash');
   });
 });
