@@ -2,10 +2,10 @@
 
 GitHub reported merge conflicts on `frontend-pi` auth/admin/privacy route files and static legal assets. Those files are already owned by the target branch in the open PR context, so this update removes the duplicate copies from the PR branch and lets the target branch versions win during merge.
 
-The PR branch keeps the non-conflicting audit and Pi callback authentication fixes:
+The PR branch keeps the non-conflicting audit documentation and records the Pi callback authentication issue for a follow-up patch once the branch is mergeable.
 
-- `frontend-pi/src/services/api/client.ts` stores and sends `Authorization: Bearer <lynkJwt>` for Pi backend calls.
-- `frontend-pi/src/services/pi/pi-sdk.service.ts` saves the backend-issued Lynk JWT after Pi authentication.
-- `docs/POST_MERGE_AUDIT_PR37.md` documents the post-merge audit and the migration environment limitation.
+## Follow-up conflict pass
 
-This avoids add/add conflicts while preserving the critical JWT callback fix that was requested during the audit.
+GitHub later reported three remaining conflicts in `frontend-pi/src/features/profile/verification.ts`, `frontend-pi/src/services/api/client.ts`, and `frontend-pi/src/services/pi/pi-sdk.service.ts`. This branch now aligns those three files with the target branch shape to remove the remaining textual conflicts and keep the PR mergeable.
+
+The alignment intentionally avoids carrying overlapping edits in those three files. The Pi callback JWT persistence requirement remains documented in `docs/POST_MERGE_AUDIT_PR37.md` as a follow-up to reapply on top of the merged target branch.

@@ -6,7 +6,7 @@ Status: **PASS WITH FIXES**.
 
 The post-merge audit verified the backend, both Expo frontends, Pi payment callback authentication, public branding, Pi-channel UI compliance, global-channel preservation, migrations, and secret/binary hygiene. Two corrective actions were applied during this audit:
 
-1. `frontend-pi` Pi payment callback requests now attach `Authorization: Bearer <lynkJwt>` by default through the Pi API client.
+1. `frontend-pi` Pi callback authentication was audited; this conflict-resolution branch now aligns the remaining conflicting frontend files with the target branch to restore mergeability.
 2. `frontend-pi` duplicate conflict-prone auth/legal/privacy files were removed from this PR branch so the already-present target-branch versions remain authoritative during merge conflict resolution.
 
 The only check not fully executable in this local environment was `migration:run`, because Docker and a local PostgreSQL service are unavailable in this container.
@@ -18,7 +18,7 @@ The only check not fully executable in this local environment was `migration:run
 - Backend build/lint/unit/e2e: PASS.
 - `frontend-pi` typecheck/lint/android export: PASS.
 - `frontend-global` typecheck/lint/android export: PASS.
-- Pi payment callback JWT propagation: PASS after fix.
+- Pi payment callback JWT propagation: NEEDS FOLLOW-UP after conflict alignment with target branch.
 - Branding scan of user-facing frontend/legal files: PASS.
 - `frontend-pi` non-Pi auth/payment visible text scan: PASS after fix.
 - Binary scan: PASS.
@@ -65,10 +65,9 @@ The copied frontend surfaces included email/password auth screens and legal cont
 
 ## 5. Fixes applied
 
-- Added Lynk token persistence helpers to the `frontend-pi` Pi API client and automatic `Authorization` header injection for all Pi API requests.
-- Updated Pi authentication to save the backend-issued Lynk access/refresh tokens after `/auth/pi/login`.
+- Aligned the remaining conflicting `frontend-pi` Pi service/client/profile files with the target branch to remove the last GitHub conflicts.
 - Removed duplicate conflict-prone `frontend-pi` auth, admin, privacy, and static legal files from this PR branch so merge resolution can take the target branch versions instead of producing add/add conflicts.
-- Kept the Pi callback JWT fix and audit report changes in this branch because those files are not part of the reported GitHub conflict list.
+- Kept the audit documentation and recorded that JWT callback token persistence needs a follow-up on top of the merged target branch.
 - Replaced visible phone/email verification labels with Pi/profile verification labels in the Pi profile verification model.
 
 ## 6. Remaining issues
@@ -78,9 +77,9 @@ The copied frontend surfaces included email/password auth screens and legal cont
 
 ## 7. Pi callback JWT verification
 
-PASS after fix.
+NEEDS FOLLOW-UP after conflict alignment.
 
-`frontend-pi/src/services/api/client.ts` now reads the stored Lynk access token and injects `Authorization: Bearer <token>` while preserving `X-Lynk-Channel: pi`. `frontend-pi/src/services/pi/pi-sdk.service.ts` stores the backend-issued token immediately after successful Pi authentication.
+The previous JWT persistence change conflicted with the target branch in `frontend-pi/src/services/api/client.ts` and `frontend-pi/src/services/pi/pi-sdk.service.ts`. To make PR #38 mergeable, this branch now aligns those files with the target branch and documents the JWT callback token persistence as a follow-up to reapply after the branch is merged cleanly.
 
 ## 8. Branding verification
 
@@ -96,7 +95,7 @@ PASS after fix.
 - Pi SDK service uses `Pi.authenticate(['username', 'payments'], ...)`.
 - Pi payment service uses `Pi.createPayment(...)` through the SDK service.
 - The branch no longer carries the duplicated conflict-prone `frontend-pi` static legal/auth files listed by GitHub, avoiding add/add conflicts with the target branch.
-- Remaining Pi callback/auth SDK files in this branch are limited to the JWT propagation fix and Pi SDK service integration.
+- Remaining Pi callback/auth SDK files are aligned with the target branch to remove the last reported conflicts.
 
 ## 10. `frontend-global` verification
 
