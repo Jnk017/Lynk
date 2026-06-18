@@ -11,6 +11,7 @@ import {
   Request,
   Headers,
   Ip,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -24,6 +25,8 @@ import {
   RefreshTokenDto,
 } from './dto/login.dto';
 import { AuthSessionContext } from './types/auth-session-context';
+import { CurrentChannel } from '../../common/decorators/current-channel.decorator';
+import { AppChannel } from '../../common/enums';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -37,7 +40,13 @@ export class AuthController {
     @Body() dto: RegisterDto,
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
+    @CurrentChannel() channel: AppChannel,
   ) {
+    if (channel === AppChannel.PI_ECOSYSTEM) {
+      throw new BadRequestException(
+        'Only Pi authentication is allowed for this source',
+      );
+    }
     return this.authService.register(
       dto,
       this.getSessionContext(dto.deviceId, userAgent, ipAddress),
@@ -52,7 +61,13 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
+    @CurrentChannel() channel: AppChannel,
   ) {
+    if (channel === AppChannel.PI_ECOSYSTEM) {
+      throw new BadRequestException(
+        'Only Pi authentication is allowed for this source',
+      );
+    }
     return this.authService.login(
       dto,
       this.getSessionContext(dto.deviceId, userAgent, ipAddress),

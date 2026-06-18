@@ -14,6 +14,7 @@ import {
   TransactionCurrency,
   TransactionProvider,
   TransactionStatus,
+  AppChannel,
 } from '../../../common/enums';
 import { User } from '../../user/entities/user.entity';
 
@@ -54,6 +55,15 @@ export class Transaction {
     enumName: 'transaction_provider_enum',
   })
   provider: TransactionProvider;
+
+  @Column({
+    type: 'enum',
+    enum: AppChannel,
+    enumName: 'app_channel_enum',
+    default: AppChannel.GLOBAL,
+  })
+  @Index()
+  channel?: AppChannel;
 
   @Column({
     type: 'enum',

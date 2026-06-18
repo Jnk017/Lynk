@@ -10,7 +10,12 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { VerificationStatus, Gender, UserRole } from '../../../common/enums';
+import {
+  AppChannel,
+  VerificationStatus,
+  Gender,
+  UserRole,
+} from '../../../common/enums';
 import { SubscriptionPlan } from '../../subscription/entities/subscription-plan.entity';
 import { ProfileMedia } from '../../profile/entities/profile-media.entity';
 import { UserPrompt } from '../../profile/entities/user-prompt.entity';
@@ -34,6 +39,31 @@ export class User {
   @Column({ unique: true, nullable: true })
   @Index()
   piWalletAddress: string;
+
+  @Column({ unique: true, nullable: true })
+  @Index()
+  piUid?: string;
+
+  @Column({ nullable: true })
+  piUsername?: string;
+
+  @Column({
+    type: 'enum',
+    enum: AppChannel,
+    enumName: 'app_channel_enum',
+    default: AppChannel.GLOBAL,
+  })
+  @Index()
+  registrationChannel?: AppChannel;
+
+  @Column({
+    type: 'enum',
+    enum: AppChannel,
+    enumName: 'app_channel_enum',
+    nullable: true,
+  })
+  @Index()
+  lastChannelUsed?: AppChannel;
 
   @Column({ nullable: true })
   googleId: string;
