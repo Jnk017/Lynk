@@ -6,6 +6,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
+  ImageStyle,
 } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -67,7 +68,7 @@ function SwipeCard({ user: profile, onSwipe }: { user: PublicProfile; onSwipe: (
       { translateX: translateX.value },
       { translateY: translateY.value },
       { rotate: `${rotation.value}deg` },
-    ],
+    ] as const,
   }));
 
   const likeStyle = useAnimatedStyle(() => ({
@@ -92,7 +93,7 @@ function SwipeCard({ user: profile, onSwipe }: { user: PublicProfile; onSwipe: (
     <GestureDetector gesture={gesture}>
       <Animated.View style={[styles.card, cardStyle, SHADOWS.violetGlow]}>
         {mainPhoto ? (
-          <Image source={{ uri: mainPhoto }} style={styles.cardImage} />
+          <Image source={{ uri: mainPhoto }} style={styles.cardImage as ImageStyle} />
         ) : (
           <LinearGradient
             colors={[COLORS.surface, COLORS.primaryViolet]}
