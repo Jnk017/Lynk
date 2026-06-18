@@ -21,5 +21,5 @@ export async function waitForPiSdk(timeoutMs = 10000) {
 
 export async function initPiSdk() { const pi = await waitForPiSdk(); pi.init({ version: '2.0', sandbox: false }); return pi; }
 export async function handleIncompletePayment(payment: unknown) { return lynkApi('/payments/pi/incomplete', { method: 'POST', body: JSON.stringify({ payment }) }); }
-export async function authenticateWithPi() { const pi = await initPiSdk(); const result = await pi.authenticate(['username', 'payments'], handleIncompletePayment); const response = await lynkApi('/auth/pi/login', { method: 'POST', body: JSON.stringify({ uid: result.user.uid, username: result.user.username, accessToken: result.accessToken }) }); return response.json(); }
+export async function authenticateWithPi() { const pi = await initPiSdk(); return pi.authenticate(['username', 'payments'], handleIncompletePayment); }
 export async function createPiPayment(paymentData: unknown, callbacks: PiPaymentCallbacks) { const pi = await initPiSdk(); return pi.createPayment(paymentData, callbacks); }
