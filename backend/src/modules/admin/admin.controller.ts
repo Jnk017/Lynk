@@ -71,28 +71,52 @@ export class AdminController {
   }
 
   @Get('reports')
-  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.MODERATOR,
+    UserRole.SUPPORT,
+    UserRole.COMPLIANCE,
+    UserRole.ADMIN,
+    UserRole.SUPER_ADMIN,
+  )
   @ApiOperation({ summary: 'Admin: list reports' })
   listReports(@Query() query: AdminReportQueryDto) {
     return this.adminService.listReports(query);
   }
 
   @Patch('reports/:id/review')
-  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.MODERATOR,
+    UserRole.SUPPORT,
+    UserRole.COMPLIANCE,
+    UserRole.ADMIN,
+    UserRole.SUPER_ADMIN,
+  )
   @ApiOperation({ summary: 'Admin: move report under review' })
   reviewReport(@Request() req: AdminRequest, @Param('id') reportId: string) {
     return this.adminService.reviewReport(req.user, reportId);
   }
 
   @Get('verifications')
-  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.MODERATOR,
+    UserRole.SUPPORT,
+    UserRole.COMPLIANCE,
+    UserRole.ADMIN,
+    UserRole.SUPER_ADMIN,
+  )
   @ApiOperation({ summary: 'Admin: list pending verification requests' })
   listVerificationQueue(@Query() query: AdminListQueryDto) {
     return this.adminService.listVerificationQueue(query);
   }
 
   @Patch('verifications/:userId/review')
-  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.MODERATOR,
+    UserRole.SUPPORT,
+    UserRole.COMPLIANCE,
+    UserRole.ADMIN,
+    UserRole.SUPER_ADMIN,
+  )
   @ApiOperation({ summary: 'Admin: review a verification request' })
   reviewVerification(
     @Request() req: AdminRequest,
@@ -108,7 +132,13 @@ export class AdminController {
   }
 
   @Patch('reports/:id/resolve')
-  @Roles(UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.MODERATOR,
+    UserRole.SUPPORT,
+    UserRole.COMPLIANCE,
+    UserRole.ADMIN,
+    UserRole.SUPER_ADMIN,
+  )
   @ApiOperation({ summary: 'Admin: resolve report' })
   resolveReport(
     @Request() req: AdminRequest,
@@ -125,7 +155,7 @@ export class AdminController {
   }
 
   @Get('transactions')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.FINANCE, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Admin: list transactions' })
   listTransactions(@Query() query: AdminListQueryDto) {
     return this.adminService.listTransactions(query);
@@ -139,14 +169,14 @@ export class AdminController {
   }
 
   @Get('revenue-distributions')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.FINANCE, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Admin: list revenue distributions' })
   listRevenueDistributions(@Query() query: AdminListQueryDto) {
     return this.adminService.listRevenueDistributions(query);
   }
 
   @Post('revenue-distributions/dry-run')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.FINANCE, UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @ApiOperation({ summary: 'Admin: dry-run monthly revenue sharing' })
   dryRunRevenueSharing(
     @Request() req: AdminRequest,
