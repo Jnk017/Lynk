@@ -106,35 +106,50 @@ jobs:
       - name: Re-run migrations after revert
         run: npm run migration:run
 
-  frontend:
-    name: Frontend install, lint, typecheck
+  frontend-pi:
+    name: Frontend Pi lint, typecheck, export
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend
+        working-directory: frontend-pi
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
+          cache-dependency-path: frontend-pi/package-lock.json
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
-
       - name: Lint
         run: npm run lint
-
       - name: Typecheck
         run: npm run typecheck
+      - name: Expo export
+        run: npx expo export
 
-      - name: Expo doctor
-        run: npx --yes expo-doctor
-        continue-on-error: true
-
+  frontend-global:
+    name: Frontend Global lint, typecheck, export
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend-global
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend-global/package-lock.json
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
       - name: Expo export
         run: npx expo export

@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { TransactionProvider } from '../../../common/enums';
+import { AppChannel, TransactionProvider } from '../../../common/enums';
 
 @Entity('payment_webhook_logs')
 @Index(['provider', 'externalEventId'], {
@@ -45,6 +45,15 @@ export class PaymentWebhookLog {
 
   @Column({ nullable: true })
   errorMessage: string;
+
+  @Column({
+    type: 'enum',
+    enum: AppChannel,
+    enumName: 'app_channel_enum',
+    default: AppChannel.GLOBAL,
+  })
+  @Index()
+  channel?: AppChannel;
 
   @CreateDateColumn()
   createdAt: Date;

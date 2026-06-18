@@ -1,3 +1,4 @@
+export * from './app-channel.enum';
 export enum VerificationStatus {
   NONE = 'none',
   PENDING = 'pending',

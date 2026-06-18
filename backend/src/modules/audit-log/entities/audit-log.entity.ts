@@ -5,7 +5,9 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  Index,
 } from 'typeorm';
+import { AppChannel } from '../../../common/enums';
 
 @Entity('audit_logs')
 export class AuditLog {
@@ -41,6 +43,15 @@ export class AuditLog {
 
   @Column({ nullable: true })
   userAgent: string;
+
+  @Column({
+    type: 'enum',
+    enum: AppChannel,
+    enumName: 'app_channel_enum',
+    default: AppChannel.GLOBAL,
+  })
+  @Index()
+  channel?: AppChannel;
 
   @CreateDateColumn()
   createdAt: Date;

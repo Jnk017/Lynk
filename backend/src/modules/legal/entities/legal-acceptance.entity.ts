@@ -6,6 +6,7 @@ import {
   Index,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { AppChannel } from '../../../common/enums';
 
 @Entity('legal_acceptances')
 @Index(['userId', 'documentType', 'documentVersion'])
@@ -37,6 +38,15 @@ export class LegalAcceptance {
 
   @Column({ type: 'timestamp', nullable: true })
   revokedAt: Date;
+
+  @Column({
+    type: 'enum',
+    enum: AppChannel,
+    enumName: 'app_channel_enum',
+    default: AppChannel.GLOBAL,
+  })
+  @Index()
+  channel?: AppChannel;
 
   @DeleteDateColumn({ nullable: true })
   deletedAt: Date;

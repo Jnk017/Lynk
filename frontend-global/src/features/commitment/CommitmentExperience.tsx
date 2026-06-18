@@ -1,0 +1,71 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Badge, Button, Card, EmptyState, ProgressBar } from '../../components/premium';
+import { theme } from '../../design-system';
+import type { CommitmentScore, JourneyStage } from './model';
+import type { CommitmentHistoryEntry, CommitmentPartner } from './types';
+
+export function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description?: string }) {
+  return <View style={styles.sectionHeading} accessible accessibilityRole="header"><Text style={styles.eyebrow}>{eyebrow}</Text><Text style={styles.sectionTitle}>{title}</Text>{description ? <Text style={styles.body}>{description}</Text> : null}</View>;
+}
+
+export function CommitmentScoreCard({ score }: { score: CommitmentScore }) {
+  return <LinearGradient colors={theme.gradients.lynkGoldPurpleHybrid} style={styles.scoreCard} accessible accessibilityRole="summary" accessibilityLabel={`${score.label}. Commitment readiness ${score.percentage} percent. ${score.explanation}`}>
+    <Text style={styles.heroEyebrow}>YOUR COMMITMENT READINESS</Text>
+    <View style={styles.scoreRow}><View style={styles.scoreCopy}><Text style={styles.heroTitle}>{score.label}</Text><Text style={styles.heroBody}>{score.explanation}</Text></View><View style={styles.scoreOrb}><Text style={styles.scoreValue}>{score.percentage}</Text><Text style={styles.scorePercent}>%</Text></View></View>
+    <ProgressBar progress={score.percentage / 100} label={`Commitment readiness ${score.percentage} percent`} />
+    <Text style={styles.disclaimer}>A private guide based only on profile, verification and relationship progress. It never affects matching or ranking.</Text>
+  </LinearGradient>;
+}
+
+const stateTone = { completed: 'success', current: 'gold', upcoming: 'neutral' } as const;
+export function CommitmentTimeline({ stages }: { stages: JourneyStage[] }) {
+  return <View style={styles.timeline} accessibilityRole="list" accessibilityLabel="Marriage commitment journey">
+    {stages.map((stage, index) => <View key={stage.key} style={styles.timelineItem} accessibilityLabel={`${index + 1} of ${stages.length}. ${stage.title}. ${stage.state}. ${stage.description}`}>
+      <View style={styles.timelineRail}><View style={[styles.timelineDot, stage.state === 'completed' && styles.dotCompleted, stage.state === 'current' && styles.dotCurrent]}><Text style={styles.dotText}>{stage.state === 'completed' ? '✓' : index + 1}</Text></View>{index < stages.length - 1 ? <View style={[styles.timelineLine, stage.state === 'completed' && styles.lineCompleted]} /> : null}</View>
+      <Card style={[styles.timelineCard, stage.state === 'current' && styles.currentCard]}><View style={styles.cardHeader}><Text style={styles.cardTitle}>{stage.title}</Text><Badge label={stage.state === 'completed' ? 'Completed' : stage.state === 'current' ? 'Current' : 'Upcoming'} tone={stateTone[stage.state]} /></View><Text style={styles.body}>{stage.description}</Text></Card>
+    </View>)}
+  </View>;
+}
+
+export function PartnerCommitmentCard({ partner, sharedProgress }: { partner?: CommitmentPartner; sharedProgress: number }) {
+  if (!partner) return <Card accessibilityLabel="No partner connected yet"><EmptyState title="No partner yet" description="Your commitment center will become shared when a relationship is ready. There is no rush—clarity begins with the right connection." /></Card>;
+  const verified = partner.verificationStatus === 'verified';
+  return <Card accessibilityLabel={`${partner.displayName ?? 'Partner'} commitment. ${verified ? 'Verified' : 'Verification in progress'}. Profile ${partner.profileCompletion ?? 0} percent complete. Shared progress ${sharedProgress} percent.`}>
+    <View style={styles.partnerTop}><View style={styles.partnerAvatar}><Text style={styles.partnerInitial}>{partner.displayName?.slice(0, 1).toUpperCase() ?? '♡'}</Text></View><View style={styles.flex}><Text style={styles.cardTitle}>{partner.displayName ?? 'Your partner'}</Text><Text style={styles.body}>Building a shared path with you</Text></View><Badge label={verified ? 'Verified' : 'In progress'} tone={verified ? 'success' : 'purple'} /></View>
+    <View style={styles.metricGrid}><Metric label="Profile" value={`${partner.profileCompletion ?? 0}%`} /><Metric label="Commitment" value={formatStatus(partner.commitmentStatus)} /></View>
+    <Text style={styles.progressLabel}>Shared progress · {sharedProgress}%</Text><ProgressBar progress={sharedProgress / 100} label={`Shared progress ${sharedProgress} percent`} />
+  </Card>;
+}
+
+function Metric({ label, value }: { label: string; value: string }) { return <View style={styles.metric}><Text style={styles.metricLabel}>{label}</Text><Text style={styles.metricValue} numberOfLines={2}>{value}</Text></View>; }
+function formatStatus(status?: string) { return status ? status.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) : 'Not started'; }
+
+export type MilestoneState = 'unlocked' | 'in_progress' | 'locked';
+export interface Milestone { key: string; title: string; description: string; state: MilestoneState; }
+export function MilestoneGrid({ milestones, onViewed }: { milestones: Milestone[]; onViewed?: (milestone: Milestone) => void }) {
+  return <View style={styles.milestoneGrid} accessibilityRole="list" accessibilityLabel="Relationship milestones">{milestones.map((milestone) => <Pressable key={milestone.key} accessibilityRole="button" accessibilityLabel={`${milestone.title}. ${milestone.state.replace('_', ' ')}. ${milestone.description}`} accessibilityHint="Marks this milestone as viewed" onPress={() => onViewed?.(milestone)} style={styles.milestonePressable}><Card style={[styles.milestone, milestone.state === 'locked' && styles.locked]}><View style={[styles.milestoneIcon, milestone.state === 'unlocked' && styles.milestoneUnlocked]}><Text style={styles.milestoneIconText}>{milestone.state === 'unlocked' ? '✓' : milestone.state === 'in_progress' ? '◇' : '○'}</Text></View><Text style={styles.cardTitle}>{milestone.title}</Text><Badge label={milestone.state === 'unlocked' ? 'Unlocked' : milestone.state === 'in_progress' ? 'In progress' : 'Locked'} tone={milestone.state === 'unlocked' ? 'success' : milestone.state === 'in_progress' ? 'gold' : 'neutral'} /><Text style={styles.body}>{milestone.description}</Text></Card></Pressable>)}</View>;
+}
+
+export function HistoryTimeline({ entries }: { entries: CommitmentHistoryEntry[] }) {
+  if (!entries.length) return <Card><EmptyState title="No history yet" description="When your commitment journey begins, meaningful changes will appear here in a clear, private record." /></Card>;
+  return <View style={styles.historyList} accessibilityRole="list" accessibilityLabel="Commitment history">{entries.map((entry, index) => <Card key={entry.id} accessibilityLabel={`${entry.title ?? formatStatus(entry.status)}. ${new Date(entry.createdAt).toLocaleDateString()}.`}><View style={styles.historyRow}><View style={styles.historyMark}><Text style={styles.historyMarkText}>{index + 1}</Text></View><View style={styles.flex}><Text style={styles.cardTitle}>{entry.title ?? formatStatus(entry.status)}</Text><Text style={styles.body}>{new Date(entry.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</Text></View><Badge label={formatStatus(entry.status)} tone={entry.status === 'cancelled' ? 'neutral' : entry.status === 'released' ? 'success' : 'purple'} /></View></Card>)}</View>;
+}
+
+export function Celebration({ title, description }: { title: string; description: string }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(8)).current;
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => { void AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion); }, []);
+  useEffect(() => { if (reduceMotion) { opacity.setValue(1); translateY.setValue(0); return; } Animated.parallel([Animated.timing(opacity, { toValue: 1, duration: 450, useNativeDriver: true }), Animated.spring(translateY, { toValue: 0, damping: 14, stiffness: 110, useNativeDriver: true })]).start(); }, [opacity, reduceMotion, translateY]);
+  return <Animated.View style={{ opacity, transform: [{ translateY }] }} accessible accessibilityRole="alert" accessibilityLabel={`${title}. ${description}`}><LinearGradient colors={theme.gradients.lynkGoldPremium} style={styles.celebration}><Text style={styles.celebrationIcon}>✦</Text><View style={styles.flex}><Text style={styles.celebrationTitle}>{title}</Text><Text style={styles.celebrationBody}>{description}</Text></View></LinearGradient></Animated.View>;
+}
+
+export function ActionCard({ title, description, label, onPress, disabled }: { title: string; description: string; label: string; onPress: () => void; disabled?: boolean }) {
+  return <Card><Text style={styles.cardTitle}>{title}</Text><Text style={styles.body}>{description}</Text><Button label={label} onPress={onPress} disabled={disabled} variant="outline" style={styles.actionButton} accessibilityHint={description} /></Card>;
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 }, sectionHeading: { gap: theme.spacing[4], marginTop: theme.spacing[8] }, eyebrow: { ...theme.typography.caption, color: theme.colors.lightGold, letterSpacing: 1 }, sectionTitle: { ...theme.typography.headingM, color: theme.colors.textPrimary }, body: { ...theme.typography.bodySmall, color: theme.colors.textSecondary, marginTop: theme.spacing[4] }, scoreCard: { borderRadius: theme.radius.xxl, padding: theme.spacing[24], gap: theme.spacing[16], ...theme.shadows.premium }, heroEyebrow: { ...theme.typography.caption, color: theme.colors.white, letterSpacing: 1 }, heroTitle: { ...theme.typography.headingL, color: theme.colors.white }, heroBody: { ...theme.typography.bodySmall, color: theme.colors.white, opacity: 0.9, marginTop: theme.spacing[8] }, scoreRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[12] }, scoreCopy: { flex: 1 }, scoreOrb: { width: 76, height: 76, borderRadius: 38, borderWidth: 1, borderColor: theme.colors.lightGold, backgroundColor: 'rgba(8,3,26,0.35)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }, scoreValue: { ...theme.typography.headingL, color: theme.colors.lightGold }, scorePercent: { ...theme.typography.caption, color: theme.colors.lightGold }, disclaimer: { ...theme.typography.caption, color: theme.colors.white, opacity: 0.75 }, timeline: { gap: 0 }, timelineItem: { flexDirection: 'row', alignItems: 'stretch' }, timelineRail: { width: theme.spacing[40], alignItems: 'center' }, timelineDot: { width: theme.spacing[32], height: theme.spacing[32], borderRadius: theme.radius.full, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.backgroundElevated, alignItems: 'center', justifyContent: 'center', zIndex: 1 }, dotCompleted: { backgroundColor: theme.colors.success, borderColor: theme.colors.success }, dotCurrent: { backgroundColor: theme.colors.primaryGold, borderColor: theme.colors.lightGold }, dotText: { ...theme.typography.caption, color: theme.colors.white, fontWeight: '700' }, timelineLine: { width: 2, flex: 1, minHeight: theme.spacing[24], backgroundColor: theme.colors.borderSubtle }, lineCompleted: { backgroundColor: theme.colors.success }, timelineCard: { flex: 1, marginBottom: theme.spacing[12], padding: theme.spacing[12] }, currentCard: { borderColor: theme.colors.lightGold, borderWidth: 1.5 }, cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: theme.spacing[8] }, cardTitle: { ...theme.typography.bodyMedium, fontWeight: '700', color: theme.colors.textPrimary, flexShrink: 1 }, partnerTop: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[12] }, partnerAvatar: { width: theme.spacing[48], height: theme.spacing[48], borderRadius: theme.radius.full, backgroundColor: theme.colors.secondaryPurple, borderWidth: 1, borderColor: theme.colors.lightGold, alignItems: 'center', justifyContent: 'center' }, partnerInitial: { ...theme.typography.headingM, color: theme.colors.lightGold }, metricGrid: { flexDirection: 'row', gap: theme.spacing[8], marginTop: theme.spacing[16] }, metric: { flex: 1, padding: theme.spacing[12], borderRadius: theme.radius.lg, backgroundColor: theme.colors.surfaceSoft }, metricLabel: { ...theme.typography.caption, color: theme.colors.textTertiary }, metricValue: { ...theme.typography.label, color: theme.colors.textPrimary, marginTop: theme.spacing[4] }, progressLabel: { ...theme.typography.caption, color: theme.colors.textSecondary, marginTop: theme.spacing[16], marginBottom: theme.spacing[8] }, milestoneGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -theme.spacing[4] }, milestonePressable: { width: '50%', padding: theme.spacing[4] }, milestone: { minHeight: 220, gap: theme.spacing[8] }, locked: { opacity: 0.62 }, milestoneIcon: { width: theme.spacing[40], height: theme.spacing[40], borderRadius: theme.radius.full, backgroundColor: theme.colors.surfaceSoft, alignItems: 'center', justifyContent: 'center' }, milestoneUnlocked: { backgroundColor: theme.colors.success }, milestoneIconText: { ...theme.typography.headingM, color: theme.colors.white }, historyList: { gap: theme.spacing[12] }, historyRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing[12] }, historyMark: { width: theme.spacing[32], height: theme.spacing[32], borderRadius: theme.radius.full, backgroundColor: theme.colors.secondaryPurple, alignItems: 'center', justifyContent: 'center' }, historyMarkText: { ...theme.typography.caption, color: theme.colors.lightGold }, celebration: { borderRadius: theme.radius.xl, padding: theme.spacing[16], flexDirection: 'row', alignItems: 'center', gap: theme.spacing[12] }, celebrationIcon: { ...theme.typography.headingL, color: theme.colors.premiumDarkPurple }, celebrationTitle: { ...theme.typography.bodyMedium, fontWeight: '700', color: theme.colors.premiumDarkPurple }, celebrationBody: { ...theme.typography.bodySmall, color: theme.colors.premiumDarkPurple, opacity: 0.82 }, actionButton: { marginTop: theme.spacing[16] },
+});
