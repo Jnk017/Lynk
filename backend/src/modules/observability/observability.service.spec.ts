@@ -31,14 +31,14 @@ describe('ObservabilityService', () => {
     } as unknown as ConfigService);
 
     await service.track(ObservabilityEventName.PAYMENT_CREATED, 'user_1', {
-      provider: 'stripe',
+      provider: 'pawapay',
       refreshToken: 'secret',
     });
 
     expect(postMock).toHaveBeenCalledWith(
       'https://posthog.example/capture/',
       expect.objectContaining({
-        properties: { provider: 'stripe' },
+        properties: { provider: 'pawapay' },
       }),
       { timeout: 1500 },
     );

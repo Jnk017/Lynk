@@ -54,8 +54,10 @@ jobs:
       REDIS_PORT: 6379
       JWT_ACCESS_SECRET: test_access_secret_minimum_32_chars
       JWT_REFRESH_SECRET: test_refresh_secret_minimum_32_chars
-      STRIPE_SECRET_KEY: ''
-      STRIPE_WEBHOOK_SECRET: ''
+      PAWAPAY_API_KEY: ''
+      PAWAPAY_WEBHOOK_SECRET: ''
+      BINANCE_PAY_API_KEY: ''
+      BINANCE_PAY_SECRET_KEY: ''
       PI_API_KEY: ''
       PI_API_BASE_URL: https://api.minepi.com/v2
       AWS_REGION: us-east-1
@@ -96,6 +98,12 @@ jobs:
         run: npm run test:e2e
 
       - name: Run migrations on clean PostgreSQL
+        run: npm run migration:run
+
+      - name: Revert latest migration
+        run: npm run migration:revert
+
+      - name: Re-run migrations after revert
         run: npm run migration:run
 
   frontend:

@@ -16,16 +16,31 @@ export class AuditLog {
   action: string;
 
   @Column({ nullable: true })
+  actorId: string;
+
+  @Column({ nullable: true })
   actorUserId: string;
 
   @Column({ nullable: true })
+  resourceType: string;
+
+  @Column({ nullable: true })
   targetType: string;
+
+  @Column({ nullable: true })
+  resourceId: string;
 
   @Column({ nullable: true })
   targetId: string;
 
   @Column({ type: 'jsonb', default: '{}' })
   metadata: Record<string, unknown>;
+
+  @Column({ nullable: true })
+  ipAddress: string;
+
+  @Column({ nullable: true })
+  userAgent: string;
 
   @CreateDateColumn()
   createdAt: Date;

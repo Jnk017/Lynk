@@ -10,6 +10,9 @@ export enum UserRole {
   PREMIUM_USER = 'premium_user',
   FOUNDER = 'founder',
   MODERATOR = 'moderator',
+  SUPPORT = 'support',
+  FINANCE = 'finance',
+  COMPLIANCE = 'compliance',
   ADMIN = 'admin',
   SUPER_ADMIN = 'super_admin',
 }
@@ -73,9 +76,10 @@ export enum TransactionProvider {
 
 export enum TransactionStatus {
   PENDING = 'pending',
+  PROCESSING = 'processing',
   COMPLETED = 'completed',
   FAILED = 'failed',
-  REFUNDED = 'refunded',
+  EXPIRED = 'expired',
 }
 
 export enum ReferralStatus {

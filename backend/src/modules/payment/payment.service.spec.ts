@@ -111,7 +111,7 @@ describe('Payment provider stubs', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('disables unfinished providers in production', async () => {
+  it('requires provider credentials in production', async () => {
     const { service } = createPaymentService('production');
 
     await expect(
@@ -122,7 +122,7 @@ describe('Payment provider stubs', () => {
         TransactionCurrency.USD,
         TransactionType.SUBSCRIPTION,
       ),
-    ).rejects.toThrow('provider stub is disabled in production');
+    ).rejects.toThrow('provider credentials are required in production');
   });
 
   it('logs Binance Pay generic provider webhooks once using provider and external event id', async () => {

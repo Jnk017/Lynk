@@ -29,6 +29,11 @@ export function validateProductionEnv(): void {
   requireStrongSecret('JWT_REFRESH_SECRET');
   requireStrongSecret('DB_PASSWORD');
   requireEnv('ALLOWED_ORIGINS');
+  requireEnv('PI_API_KEY');
+  requireEnv('PAWAPAY_API_KEY');
+  requireStrongSecret('PAWAPAY_WEBHOOK_SECRET');
+  requireEnv('BINANCE_PAY_API_KEY');
+  requireStrongSecret('BINANCE_PAY_SECRET_KEY');
 
   if (process.env.DB_SYNCHRONIZE === 'true') {
     throw new Error('DB_SYNCHRONIZE must never be true in production');

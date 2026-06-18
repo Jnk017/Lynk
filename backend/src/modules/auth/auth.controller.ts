@@ -6,6 +6,8 @@ import {
   HttpStatus,
   UseGuards,
   Get,
+  Delete,
+  Param,
   Request,
   Headers,
   Ip,
@@ -91,8 +93,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @ApiOperation({ summary: 'Logout current device by revoking refresh token' })
-  logout(@Body() dto: LogoutDto) {
-    return this.authService.logout(dto.refreshToken);
+  logout(
+    @Body() dto: LogoutDto,
+    @Headers('user-agent') userAgent: string,
+    @Ip() ipAddress: string,
+  ) {
+    return this.authService.logout(dto.refreshToken, { userAgent, ipAddress });
   }
 
   @Post('logout-all')
@@ -100,8 +106,39 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout all devices for the current user' })
-  logoutAll(@Request() req: { user: { id: string } }) {
-    return this.authService.logoutAllDevices(req.user.id);
+  logoutAll(
+    @Request() req: { user: { id: string } },
+    @Headers('user-agent') userAgent: string,
+    @Ip() ipAddress: string,
+  ) {
+    return this.authService.logoutAllDevices(req.user.id, {
+      userAgent,
+      ipAddress,
+    });
+  }
+
+  @Get('sessions')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List active refresh-token sessions' })
+  sessions(@Request() req: { user: { id: string } }) {
+    return this.authService.listSessions(req.user.id);
+  }
+
+  @Delete('sessions/:id')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Revoke one refresh-token session' })
+  revokeSession(
+    @Request() req: { user: { id: string } },
+    @Param('id') sessionId: string,
+    @Headers('user-agent') userAgent: string,
+    @Ip() ipAddress: string,
+  ) {
+    return this.authService.revokeSession(req.user.id, sessionId, {
+      userAgent,
+      ipAddress,
+    });
   }
 
   @Get('me')
