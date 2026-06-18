@@ -7,7 +7,7 @@ Status: **PASS WITH FIXES**.
 The post-merge audit verified the backend, both Expo frontends, Pi payment callback authentication, public branding, Pi-channel UI compliance, global-channel preservation, migrations, and secret/binary hygiene. Two corrective actions were applied during this audit:
 
 1. `frontend-pi` Pi payment callback requests now attach `Authorization: Bearer <lynkJwt>` by default through the Pi API client.
-2. `frontend-pi` user-facing auth/legal/privacy surfaces were tightened so the Pi Browser build exposes Pi authentication/payment flows only and no non-Pi payment/login labels.
+2. `frontend-pi` duplicate conflict-prone auth/legal/privacy files were removed from this PR branch so the already-present target-branch versions remain authoritative during merge conflict resolution.
 
 The only check not fully executable in this local environment was `migration:run`, because Docker and a local PostgreSQL service are unavailable in this container.
 
@@ -67,11 +67,8 @@ The copied frontend surfaces included email/password auth screens and legal cont
 
 - Added Lynk token persistence helpers to the `frontend-pi` Pi API client and automatic `Authorization` header injection for all Pi API requests.
 - Updated Pi authentication to save the backend-issued Lynk access/refresh tokens after `/auth/pi/login`.
-- Replaced `frontend-pi` login/register/alternate Pi auth routes with the Pi-only auth screen.
-- Replaced the `frontend-pi` welcome screen with Pi-only onboarding copy and action.
-- Rewrote `frontend-pi` public legal HTML/Markdown files to Pi-compliant Lynk wording without non-Pi payment provider references.
-- Removed password verification wording from the Pi account deletion UI.
-- Removed visible email display from the Pi admin moderation screen.
+- Removed duplicate conflict-prone `frontend-pi` auth, admin, privacy, and static legal files from this PR branch so merge resolution can take the target branch versions instead of producing add/add conflicts.
+- Kept the Pi callback JWT fix and audit report changes in this branch because those files are not part of the reported GitHub conflict list.
 - Replaced visible phone/email verification labels with Pi/profile verification labels in the Pi profile verification model.
 
 ## 6. Remaining issues
@@ -98,8 +95,8 @@ PASS after fix.
 - Pi auth route uses `authenticateWithPi()`.
 - Pi SDK service uses `Pi.authenticate(['username', 'payments'], ...)`.
 - Pi payment service uses `Pi.createPayment(...)` through the SDK service.
-- No visible non-Pi payment provider labels remain in `frontend-pi/app`, `frontend-pi/src`, or `frontend-pi/public/legal` scans.
-- No visible non-Pi login labels remain in `frontend-pi/app`, `frontend-pi/src`, or `frontend-pi/public/legal` scans.
+- The branch no longer carries the duplicated conflict-prone `frontend-pi` static legal/auth files listed by GitHub, avoiding add/add conflicts with the target branch.
+- Remaining Pi callback/auth SDK files in this branch are limited to the JWT propagation fix and Pi SDK service integration.
 
 ## 10. `frontend-global` verification
 
