@@ -101,6 +101,7 @@ export class PaymentService {
         return { ...webhookResult, duplicate: true, logId: duplicate.id };
       }
     }
+    await this.synchronizeTransactionFromWebhook(webhookResult);
     const log = await this.webhookLogRepository.save({
       provider,
       eventType: webhookResult.eventType,
@@ -211,6 +212,84 @@ export class PaymentService {
       skip: (page - 1) * limit,
       take: limit,
     });
+  }
+
+  async transitionTransactionStatus(
+    transactionId: string,
+    nextStatus: TransactionStatus,
+  ): Promise<Transaction> {
+    const transaction = await this.transactionRepository.findOne({
+      where: { id: transactionId },
+    });
+    if (!transaction)
+      throw new NotFoundException('Payment transaction not found');
+    this.assertValidStatusTransition(transaction.status, nextStatus);
+    transaction.status = nextStatus;
+    return this.transactionRepository.save(transaction);
+  }
+
+  private async synchronizeTransactionFromWebhook(
+    webhookResult: WebhookResult,
+  ): Promise<void> {
+    if (!webhookResult.externalRef) return;
+    const transaction = await this.transactionRepository.findOne({
+      where: { externalRef: webhookResult.externalRef },
+    });
+    if (!transaction) return;
+    const eventType = (webhookResult.eventType || '').toLowerCase();
+    let nextStatus: TransactionStatus | undefined;
+    if (eventType.includes('fail') || eventType.includes('reject'))
+      nextStatus = TransactionStatus.FAILED;
+    else if (eventType.includes('expire'))
+      nextStatus = TransactionStatus.EXPIRED;
+    else if (
+      eventType.includes('complete') ||
+      eventType.includes('success') ||
+      eventType.includes('paid')
+    )
+      nextStatus = TransactionStatus.COMPLETED;
+    else if (webhookResult.processed) nextStatus = TransactionStatus.PROCESSING;
+    if (
+      nextStatus &&
+      this.isValidStatusTransition(transaction.status, nextStatus)
+    ) {
+      transaction.status = nextStatus;
+      transaction.metadata = {
+        ...(transaction.metadata || {}),
+        lastWebhookEventType: webhookResult.eventType,
+      };
+      await this.transactionRepository.save(transaction);
+    }
+  }
+
+  private assertValidStatusTransition(
+    currentStatus: TransactionStatus,
+    nextStatus: TransactionStatus,
+  ): void {
+    if (!this.isValidStatusTransition(currentStatus, nextStatus)) {
+      throw new BadRequestException(
+        `Invalid payment status transition from ${currentStatus} to ${nextStatus}`,
+      );
+    }
+  }
+
+  private isValidStatusTransition(
+    currentStatus: TransactionStatus,
+    nextStatus: TransactionStatus,
+  ): boolean {
+    if (currentStatus === nextStatus) return true;
+    const allowed: Record<TransactionStatus, TransactionStatus[]> = {
+      [TransactionStatus.PENDING]: [
+        TransactionStatus.PROCESSING,
+        TransactionStatus.FAILED,
+        TransactionStatus.EXPIRED,
+      ],
+      [TransactionStatus.PROCESSING]: [TransactionStatus.COMPLETED],
+      [TransactionStatus.COMPLETED]: [],
+      [TransactionStatus.FAILED]: [],
+      [TransactionStatus.EXPIRED]: [],
+    };
+    return allowed[currentStatus]?.includes(nextStatus) || false;
   }
 
   private getPaymentProvider(provider: TransactionProvider): PaymentProvider {

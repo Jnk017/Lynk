@@ -8,9 +8,13 @@ import { PaymentController } from './payment.controller';
 import { PiPaymentProvider } from './providers/pi-payment.provider';
 import { PawapayPaymentProviderStub } from './providers/pawapay-payment-provider.stub';
 import { BinancePayPaymentProviderStub } from './providers/binance-pay-payment-provider.stub';
+import { AuditLogModule } from '../audit-log/audit-log.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Transaction, PaymentWebhookLog, User])],
+  imports: [
+    TypeOrmModule.forFeature([Transaction, PaymentWebhookLog, User]),
+    AuditLogModule,
+  ],
   controllers: [PaymentController],
   providers: [
     PaymentService,

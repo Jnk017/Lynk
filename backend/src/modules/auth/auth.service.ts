@@ -6,7 +6,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
+import { Repository, DataSource, IsNull, MoreThan } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -210,6 +210,20 @@ export class AuthService {
       ...context,
       deviceId: dto.deviceId || context.deviceId,
     });
+    await this.auditLogService.record({
+      action: 'auth.login',
+      actorUserId: user.id,
+      targetType: 'user',
+      targetId: user.id,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      metadata: { deviceId: dto.deviceId || context.deviceId },
+    });
+    void this.observabilityService?.track(
+      ObservabilityEventName.LOGIN_COMPLETED,
+      user.id,
+      { method: 'password' },
+    );
     return {
       user: this.sanitizeUser(user),
       accessToken: tokens.accessToken,
@@ -367,17 +381,51 @@ export class AuthService {
         replacedByTokenId: rotated.refreshTokenId,
       });
 
+      await this.auditLogService.record({
+        action: 'auth.refresh_token_rotation',
+        actorUserId: user.id,
+        targetType: 'refresh_token',
+        targetId: tokenRecord.id,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        metadata: {
+          oldTokenId: tokenRecord.id,
+          newTokenId: rotated.refreshTokenId,
+          deviceId:
+            context.deviceId || tokenRecord.deviceId || payload.deviceId,
+        },
+      });
+
       return {
         accessToken: rotated.accessToken,
         refreshToken: rotated.refreshToken,
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException) throw error;
+      if (error instanceof UnauthorizedException) {
+        await this.auditLogService.record({
+          action: 'auth.refresh_failed',
+          targetType: 'refresh_token',
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          metadata: { reason: error.message, deviceId: context.deviceId },
+        });
+        throw error;
+      }
+      await this.auditLogService.record({
+        action: 'auth.refresh_failed',
+        targetType: 'refresh_token',
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        metadata: { reason: 'invalid_or_expired', deviceId: context.deviceId },
+      });
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
 
-  async logout(refreshToken: string): Promise<{ success: true }> {
+  async logout(
+    refreshToken: string,
+    context: AuthSessionContext = {},
+  ): Promise<{ success: true }> {
     const payload = this.jwtService.verify<JwtRefreshPayload>(refreshToken, {
       secret: this.configService.get<string>('jwt.refreshSecret'),
     });
@@ -385,14 +433,76 @@ export class AuthService {
       { id: payload.jti, userId: payload.sub },
       { revokedAt: new Date() },
     );
+    await this.auditLogService.record({
+      action: 'auth.logout',
+      actorUserId: payload.sub,
+      targetType: 'refresh_token',
+      targetId: payload.jti,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      metadata: { deviceId: payload.deviceId },
+    });
     return { success: true };
   }
 
-  async logoutAllDevices(userId: string): Promise<{ success: true }> {
+  async logoutAllDevices(
+    userId: string,
+    context: AuthSessionContext = {},
+  ): Promise<{ success: true }> {
     await this.refreshTokenRepository.update(
       { userId, revokedAt: IsNull() },
       { revokedAt: new Date() },
     );
+    await this.auditLogService.record({
+      action: 'auth.logout_all',
+      actorUserId: userId,
+      targetType: 'refresh_token',
+      targetId: userId,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+    });
+    return { success: true };
+  }
+
+  async listSessions(userId: string): Promise<Array<Record<string, unknown>>> {
+    const sessions = await this.refreshTokenRepository.find({
+      where: {
+        userId,
+        revokedAt: IsNull(),
+        expiresAt: MoreThan(new Date()),
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    return sessions.map((session) => ({
+      id: session.id,
+      deviceId: session.deviceId,
+      userAgent: session.userAgent,
+      ipAddress: session.ipAddress,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      expiresAt: session.expiresAt,
+      lastUsedAt: session.lastUsedAt,
+    }));
+  }
+
+  async revokeSession(
+    userId: string,
+    sessionId: string,
+    context: AuthSessionContext = {},
+  ): Promise<{ success: true }> {
+    await this.refreshTokenRepository.update(
+      { id: sessionId, userId, revokedAt: IsNull() },
+      { revokedAt: new Date() },
+    );
+    await this.auditLogService.record({
+      action: 'auth.session_revoked',
+      actorUserId: userId,
+      targetType: 'refresh_token',
+      targetId: sessionId,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+    });
     return { success: true };
   }
 
