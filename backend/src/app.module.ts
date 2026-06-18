@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -33,6 +33,7 @@ import { RefreshToken } from './modules/auth/entities/refresh-token.entity';
 import { Report } from './modules/moderation/entities/report.entity';
 import { UserBlock } from './modules/moderation/entities/user-block.entity';
 import { LegalAcceptance } from './modules/legal/entities/legal-acceptance.entity';
+import { PiPayment } from './modules/pi/entities/pi-payment.entity';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -58,6 +59,8 @@ import { AdminModule } from './modules/admin/admin.module';
 import { ObservabilityModule } from './modules/observability/observability.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
 import { LegalModule } from './modules/legal/legal.module';
+import { PiModule } from './modules/pi/pi.module';
+import { ChannelMiddleware } from './common/channel/channel.middleware';
 
 @Module({
   imports: [
@@ -103,6 +106,7 @@ import { LegalModule } from './modules/legal/legal.module';
           Report,
           UserBlock,
           LegalAcceptance,
+          PiPayment,
         ],
         synchronize:
           configService.get<boolean>('database.synchronize') === true,
@@ -153,6 +157,11 @@ import { LegalModule } from './modules/legal/legal.module';
     ObservabilityModule,
     ModerationModule,
     LegalModule,
+    PiModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(ChannelMiddleware).forRoutes('*');
+  }
+}

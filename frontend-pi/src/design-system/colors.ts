@@ -1,0 +1,46 @@
+export const colors = {
+  brand: {
+    primaryGold: '#D4A63A',
+    lightGold: '#F5C76A',
+    deepGold: '#A87418',
+    premiumDarkPurple: '#1E0B4F',
+    secondaryPurple: '#34106B',
+    backgroundPurple: '#0F062B',
+    midnight: '#08031A',
+    white: '#FFFFFF',
+  },
+  semantic: {
+    success: '#22C55E',
+    warning: '#F59E0B',
+    danger: '#EF4444',
+    info: '#7C6DFF',
+  },
+  dark: {
+    background: '#0F062B',
+    backgroundElevated: '#16093A',
+    surface: 'rgba(30, 11, 79, 0.82)',
+    surfaceStrong: 'rgba(52, 16, 107, 0.92)',
+    surfaceSoft: 'rgba(255, 255, 255, 0.06)',
+    border: 'rgba(245, 199, 106, 0.22)',
+    borderSubtle: 'rgba(255, 255, 255, 0.12)',
+    textPrimary: '#FFFFFF',
+    textSecondary: 'rgba(255, 255, 255, 0.78)',
+    textTertiary: 'rgba(255, 255, 255, 0.56)',
+    overlay: 'rgba(8, 3, 26, 0.72)',
+  },
+  light: {
+    background: '#FBF7EF',
+    backgroundElevated: '#FFFFFF',
+    surface: '#FFFFFF',
+    surfaceStrong: '#FFF8E8',
+    surfaceSoft: 'rgba(30, 11, 79, 0.06)',
+    border: 'rgba(52, 16, 107, 0.16)',
+    borderSubtle: 'rgba(52, 16, 107, 0.10)',
+    textPrimary: '#1E0B4F',
+    textSecondary: 'rgba(30, 11, 79, 0.72)',
+    textTertiary: 'rgba(30, 11, 79, 0.52)',
+    overlay: 'rgba(30, 11, 79, 0.45)',
+  },
+} as const;
+
+export type ColorToken = typeof colors;

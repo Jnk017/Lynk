@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { BadRequestException } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -24,6 +25,8 @@ import {
   TransactionType,
 } from '../../common/enums';
 import { PaymentService } from './payment.service';
+import { CurrentChannel } from '../../common/decorators/current-channel.decorator';
+import { AppChannel } from '../../common/enums';
 
 class CreateProviderPaymentDto {
   @ApiProperty({ description: 'Amount in major currency units' })
@@ -82,7 +85,24 @@ export class PaymentController {
     @Param('provider', new ParseEnumPipe(TransactionProvider))
     provider: TransactionProvider,
     @Body() dto: CreateProviderPaymentDto,
+    @CurrentChannel() channel: AppChannel,
   ) {
+    if (
+      channel === AppChannel.PI_ECOSYSTEM &&
+      provider !== TransactionProvider.PI_NETWORK
+    ) {
+      throw new BadRequestException(
+        'Only Pi payments are allowed for this source',
+      );
+    }
+    if (
+      channel === AppChannel.PI_ECOSYSTEM &&
+      dto.currency !== TransactionCurrency.PI
+    ) {
+      throw new BadRequestException(
+        'Only Pi currency is allowed for this source',
+      );
+    }
     return this.paymentService.createProviderPayment(
       req.user.id,
       provider,
