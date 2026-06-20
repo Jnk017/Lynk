@@ -21,20 +21,29 @@ export class PiPaymentService {
     @InjectRepository(PiPayment) private payments: Repository<PiPayment>,
     private piApi: PiApiService,
   ) {}
+
   assertPi(channel: AppChannel) {
-    if (channel !== AppChannel.PI_ECOSYSTEM)
+    if (channel !== AppChannel.PI_ECOSYSTEM) {
       throw new BadRequestException('Pi payments require the Pi source');
+    }
   }
+
   async approve(userId: string, dto: PiApprovePaymentDto, channel: AppChannel) {
     this.assertPi(channel);
     let payment = await this.payments.findOne({
       where: { paymentId: dto.paymentId },
     });
-    if (
-      payment?.status === PiPaymentStatus.APPROVED ||
-      payment?.status === PiPaymentStatus.COMPLETED
-    )
-      return { success: true, idempotent: true, payment };
+
+    if (payment) {
+      this.assertPaymentOwner(payment, userId);
+      if (
+        payment.status === PiPaymentStatus.APPROVED ||
+        payment.status === PiPaymentStatus.COMPLETED
+      ) {
+        return { success: true, idempotent: true, payment };
+      }
+    }
+
     const rawApprovalResponse = await this.piApi.approvePayment(dto.paymentId);
     payment = await this.payments.save({
       ...(payment || {}),
@@ -49,6 +58,7 @@ export class PiPaymentService {
     });
     return { success: true, payment };
   }
+
   async complete(
     userId: string,
     dto: PiCompletePaymentDto,
@@ -59,10 +69,15 @@ export class PiPaymentService {
       where: { paymentId: dto.paymentId },
     });
     if (!payment) throw new NotFoundException('Pi payment not found');
-    if (payment.userId !== userId)
-      throw new BadRequestException('Payment ownership mismatch');
-    if (payment.status === PiPaymentStatus.COMPLETED)
+    this.assertPaymentOwner(payment, userId);
+    if (payment.status === PiPaymentStatus.COMPLETED) {
+      if (payment.txid && payment.txid !== dto.txid) {
+        throw new BadRequestException(
+          'Payment already completed with a different transaction',
+        );
+      }
       return { success: true, idempotent: true, payment };
+    }
     const rawCompletionResponse = await this.piApi.completePayment(
       dto.paymentId,
       dto.txid,
@@ -73,12 +88,14 @@ export class PiPaymentService {
     payment.completedAt = new Date();
     return { success: true, payment: await this.payments.save(payment) };
   }
+
   async cancel(userId: string, dto: PiCancelPaymentDto, channel: AppChannel) {
     this.assertPi(channel);
     return this.terminal(userId, dto.paymentId, PiPaymentStatus.CANCELLED, {
       cancelledAt: new Date(),
     });
   }
+
   async error(userId: string, dto: PiErrorPaymentDto, channel: AppChannel) {
     this.assertPi(channel);
     return this.terminal(userId, dto.paymentId, PiPaymentStatus.FAILED, {
@@ -87,6 +104,7 @@ export class PiPaymentService {
       errorMessage: dto.errorMessage,
     });
   }
+
   private async terminal(
     userId: string,
     paymentId: string,
@@ -94,7 +112,7 @@ export class PiPaymentService {
     patch: Partial<PiPayment>,
   ) {
     let p = await this.payments.findOne({ where: { paymentId } });
-    if (!p)
+    if (!p) {
       p = this.payments.create({
         userId,
         paymentId,
@@ -102,9 +120,19 @@ export class PiPaymentService {
         productType: 'unknown',
         status,
       });
-    if (p.status === PiPaymentStatus.COMPLETED)
+    } else {
+      this.assertPaymentOwner(p, userId);
+    }
+    if (p.status === PiPaymentStatus.COMPLETED) {
       return { success: true, idempotent: true, payment: p };
+    }
     Object.assign(p, patch, { status });
     return { success: true, payment: await this.payments.save(p) };
+  }
+
+  private assertPaymentOwner(payment: PiPayment, userId: string) {
+    if (payment.userId !== userId) {
+      throw new BadRequestException('Payment ownership mismatch');
+    }
   }
 }
