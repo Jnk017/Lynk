@@ -13,30 +13,46 @@ function createContext(role?: UserRole): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
+function createGuard(requiredRoles?: UserRole[]) {
+  const reflector = {
+    getAllAndOverride: jest.fn(() => requiredRoles),
+  } as unknown as Reflector;
+  return new RolesGuard(reflector);
+}
+
 describe('RolesGuard', () => {
+  it('allows routes without role metadata', () => {
+    const guard = createGuard(undefined);
+
+    expect(guard.canActivate(createContext())).toBe(true);
+  });
+
+  it('blocks unauthenticated requests from admin-only routes', () => {
+    const guard = createGuard([UserRole.ADMIN, UserRole.SUPER_ADMIN]);
+
+    expect(guard.canActivate(createContext())).toBe(false);
+  });
+
   it('blocks regular users from admin-only routes', () => {
-    const reflector = {
-      getAllAndOverride: jest.fn(() => [UserRole.ADMIN, UserRole.SUPER_ADMIN]),
-    } as unknown as Reflector;
-    const guard = new RolesGuard(reflector);
+    const guard = createGuard([UserRole.ADMIN, UserRole.SUPER_ADMIN]);
 
     expect(guard.canActivate(createContext(UserRole.USER))).toBe(false);
   });
 
+  it('allows admins on admin-only routes', () => {
+    const guard = createGuard([UserRole.ADMIN, UserRole.SUPER_ADMIN]);
+
+    expect(guard.canActivate(createContext(UserRole.ADMIN))).toBe(true);
+  });
+
   it('allows super admins to manage protected settings', () => {
-    const reflector = {
-      getAllAndOverride: jest.fn(() => [UserRole.SUPER_ADMIN]),
-    } as unknown as Reflector;
-    const guard = new RolesGuard(reflector);
+    const guard = createGuard([UserRole.SUPER_ADMIN]);
 
     expect(guard.canActivate(createContext(UserRole.SUPER_ADMIN))).toBe(true);
   });
 
   it('blocks moderators from super-admin settings routes', () => {
-    const reflector = {
-      getAllAndOverride: jest.fn(() => [UserRole.SUPER_ADMIN]),
-    } as unknown as Reflector;
-    const guard = new RolesGuard(reflector);
+    const guard = createGuard([UserRole.SUPER_ADMIN]);
 
     expect(guard.canActivate(createContext(UserRole.MODERATOR))).toBe(false);
   });
