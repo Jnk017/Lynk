@@ -26,40 +26,42 @@ export class LoginDto {
   @IsString()
   password: string;
 
-  @ApiProperty({
-    required: false,
-    description: 'Stable client device identifier',
-  })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsUUID()
   deviceId?: string;
 }
 
 export class PiAuthDto {
-  @ApiProperty({ description: 'Pi Network access token from Pi SDK' })
+  @ApiProperty()
+  @IsString()
+  uid: string;
+
+  @ApiProperty()
   @IsString()
   accessToken: string;
 
-  @ApiProperty({
-    required: false,
-    description: 'Required only when Pi creates a new account',
-  })
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  piWalletAddress?: string;
+
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsBoolean()
   termsAccepted?: boolean;
 
-  @ApiProperty({
-    required: false,
-    description: 'Required only when Pi creates a new account',
-  })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsBoolean()
   privacyAccepted?: boolean;
 
-  @ApiProperty({
-    required: false,
-    description: 'Required only when Pi creates a new account',
-  })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsBoolean()
   ageConfirmed?: boolean;
@@ -80,17 +82,14 @@ export class PiAuthDto {
   @MaxLength(20)
   documentVersion?: string;
 
-  @ApiProperty({
-    required: false,
-    description: 'Stable client device identifier',
-  })
+  @ApiProperty({ required: false })
   @IsOptional()
   @IsUUID()
   deviceId?: string;
 }
 
 export class GoogleAuthDto {
-  @ApiProperty({ description: 'Google ID token' })
+  @ApiProperty()
   @IsString()
   idToken: string;
 }
