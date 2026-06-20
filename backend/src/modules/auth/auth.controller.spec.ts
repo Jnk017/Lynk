@@ -4,10 +4,11 @@ import { AuthService } from './auth.service';
 import { AppChannel } from '../../common/enums';
 
 function buildController() {
+  const loginWithPi = jest.fn();
   const service = {
     register: jest.fn(),
     login: jest.fn(),
-    loginWithPi: jest.fn(),
+    loginWithPi,
     refreshTokens: jest.fn(),
     logout: jest.fn(),
     logoutAllDevices: jest.fn(),
@@ -15,12 +16,12 @@ function buildController() {
     revokeSession: jest.fn(),
   } as unknown as AuthService;
 
-  return { controller: new AuthController(service), service };
+  return { controller: new AuthController(service), loginWithPi };
 }
 
 describe('AuthController Pi auth channel enforcement', () => {
   it('rejects Pi auth when request channel is GLOBAL', () => {
-    const { controller, service } = buildController();
+    const { controller, loginWithPi } = buildController();
 
     expect(() =>
       controller.loginWithPi(
@@ -30,12 +31,12 @@ describe('AuthController Pi auth channel enforcement', () => {
         AppChannel.GLOBAL,
       ),
     ).toThrow(ForbiddenException);
-    expect(service.loginWithPi).not.toHaveBeenCalled();
+    expect(loginWithPi).not.toHaveBeenCalled();
   });
 
   it('accepts Pi auth when request channel is PI_ECOSYSTEM', () => {
-    const { controller, service } = buildController();
-    jest.spyOn(service, 'loginWithPi').mockReturnValue({ ok: true } as never);
+    const { controller, loginWithPi } = buildController();
+    loginWithPi.mockReturnValue({ ok: true });
 
     expect(
       controller.loginWithPi(
@@ -45,7 +46,7 @@ describe('AuthController Pi auth channel enforcement', () => {
         AppChannel.PI_ECOSYSTEM,
       ),
     ).toEqual({ ok: true });
-    expect(service.loginWithPi).toHaveBeenCalledWith(
+    expect(loginWithPi).toHaveBeenCalledWith(
       { uid: 'pi-user-1', accessToken: 'token' },
       { deviceId: undefined, userAgent: 'jest', ipAddress: '127.0.0.1' },
     );
