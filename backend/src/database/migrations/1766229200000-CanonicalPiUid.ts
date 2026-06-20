@@ -5,6 +5,9 @@ export class CanonicalPiUid1766229200000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
+      'ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "piUid" character varying',
+    );
+    await queryRunner.query(
       'UPDATE "users" SET "piUid" = "piWalletAddress" WHERE "piUid" IS NULL AND "piWalletAddress" IS NOT NULL',
     );
     await queryRunner.query(
