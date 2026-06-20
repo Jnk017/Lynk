@@ -232,11 +232,13 @@ export class AuthService {
   }
 
   async loginWithPi(dto: PiAuthDto, context: AuthSessionContext = {}) {
-    // Verify the Pi access token via Pi Network API
     const piUser = await this.verifyPiToken(dto.accessToken);
+    if (dto.uid !== piUser.uid) {
+      throw new UnauthorizedException('Invalid Pi identity');
+    }
 
     let user = await this.userRepository.findOne({
-      where: { piWalletAddress: piUser.uid },
+      where: { piUid: piUser.uid },
     });
 
     if (!user) {
@@ -257,8 +259,10 @@ export class AuthService {
 
       try {
         user = await queryRunner.manager.save(User, {
-          piWalletAddress: piUser.uid,
-          displayName: piUser.username,
+          piUid: piUser.uid,
+          piUsername: dto.username || piUser.username,
+          piWalletAddress: dto.piWalletAddress,
+          displayName: dto.username || piUser.username,
           referralCode: this.generateReferralCode(),
         });
 
@@ -317,10 +321,19 @@ export class AuthService {
       }
     }
 
+    if (user.isBanned) {
+      throw new UnauthorizedException('This account has been suspended');
+    }
+
     const tokens = await this.generateTokens(user, {
       ...context,
       deviceId: dto.deviceId || context.deviceId,
     });
+    void this.observabilityService?.track(
+      ObservabilityEventName.LOGIN_COMPLETED,
+      user.id,
+      { method: 'pi' },
+    );
     return {
       user: this.sanitizeUser(user),
       accessToken: tokens.accessToken,
@@ -628,6 +641,8 @@ export class AuthService {
       id: user.id,
       email: user.email,
       phone: user.phone,
+      piUid: user.piUid,
+      piUsername: user.piUsername,
       piWalletAddress: user.piWalletAddress,
       displayName: user.displayName,
       gender: user.gender,
