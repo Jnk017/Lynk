@@ -144,9 +144,8 @@ describe('AuthService Pi authentication', () => {
   });
 
   it('logs in an existing Pi account by piUid and returns tokens', async () => {
-    const { refreshTokenRepository, service, userRepository } = buildService(
-      makeUser(),
-    );
+    const { refreshTokenRepository, service, userRepository } =
+      buildService(makeUser());
 
     const result = await service.loginWithPi({
       uid: 'pi-user-1',
