@@ -12,6 +12,7 @@ import {
   Headers,
   Ip,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -77,12 +78,18 @@ export class AuthController {
   @Post('pi')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @ApiOperation({ summary: 'Authenticate with Pi Network wallet' })
+  @ApiOperation({ summary: 'Authenticate with Pi Network' })
   loginWithPi(
     @Body() dto: PiAuthDto,
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
+    @CurrentChannel() channel: AppChannel,
   ) {
+    if (channel !== AppChannel.PI_ECOSYSTEM) {
+      throw new ForbiddenException(
+        'Pi authentication requires PI_ECOSYSTEM channel',
+      );
+    }
     return this.authService.loginWithPi(
       dto,
       this.getSessionContext(dto.deviceId, userAgent, ipAddress),
