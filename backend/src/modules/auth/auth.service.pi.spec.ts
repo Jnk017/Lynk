@@ -77,7 +77,7 @@ function makeUser(overrides: Partial<User> = {}): User {
     deletedAt: null,
     deletionRequestedAt: null,
     ...overrides,
-  } as User;
+  };
 }
 
 function buildService(user: User | null = null) {
