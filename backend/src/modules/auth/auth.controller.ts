@@ -86,7 +86,9 @@ export class AuthController {
     @CurrentChannel() channel: AppChannel,
   ) {
     if (channel !== AppChannel.PI_ECOSYSTEM) {
-      throw new ForbiddenException('Pi authentication requires PI_ECOSYSTEM channel');
+      throw new ForbiddenException(
+        'Pi authentication requires PI_ECOSYSTEM channel',
+      );
     }
     return this.authService.loginWithPi(
       dto,
