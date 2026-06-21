@@ -124,9 +124,7 @@ describe('SubscriptionService paid activation safety', () => {
     expect(updateCall[0]).toBe(Transaction);
     expect(updateCall[1]).toBe('tx-1');
     expect(updateCall[2].metadata.provider).toBe('test');
-    expect(updateCall[2].metadata.subscriptionTier).toBe(
-      SubscriptionTier.GOLD,
-    );
+    expect(updateCall[2].metadata.subscriptionTier).toBe(SubscriptionTier.GOLD);
     expect(typeof updateCall[2].metadata.subscriptionActivatedAt).toBe(
       'string',
     );
