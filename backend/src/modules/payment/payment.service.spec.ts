@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import {
@@ -111,6 +111,21 @@ describe('Payment provider stubs', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
+  it('rejects unsupported payment providers before creating transactions', async () => {
+    const { service, transactionRepository } = createPaymentService();
+
+    await expect(
+      service.createProviderPayment(
+        'user-1',
+        'UNSUPPORTED' as TransactionProvider,
+        10,
+        TransactionCurrency.USD,
+        TransactionType.SUBSCRIPTION,
+      ),
+    ).rejects.toThrow('Payment provider UNSUPPORTED is not supported');
+    expect(transactionRepository.save).not.toHaveBeenCalled();
+  });
+
   it('requires provider credentials in production', async () => {
     const { service } = createPaymentService('production');
 
@@ -189,5 +204,37 @@ describe('Payment transaction consumption safety', () => {
     );
 
     expect(transaction.id).toBe('tx-1');
+  });
+
+  it('rejects missing or non-completed transactions before consumption', async () => {
+    const { service, transactionRepository } = createPaymentService();
+    transactionRepository.findOne.mockResolvedValueOnce(null);
+
+    await expect(
+      service.getCompletedTransactionForUse(
+        'user-1',
+        'missing-tx',
+        TransactionType.SUBSCRIPTION,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects already consumed payment transactions', async () => {
+    const { service, transactionRepository } = createPaymentService();
+    transactionRepository.findOne.mockResolvedValueOnce({
+      id: 'tx-1',
+      userId: 'user-1',
+      type: TransactionType.SUBSCRIPTION,
+      status: TransactionStatus.COMPLETED,
+      metadata: { subscriptionActivatedAt: new Date().toISOString() },
+    } as unknown as Transaction);
+
+    await expect(
+      service.getCompletedTransactionForUse(
+        'user-1',
+        'tx-1',
+        TransactionType.SUBSCRIPTION,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
