@@ -182,7 +182,9 @@ describe('AdminService', () => {
     );
 
     expect(userRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({ verificationStatus: VerificationStatus.REJECTED }),
+      expect.objectContaining({
+        verificationStatus: VerificationStatus.REJECTED,
+      }),
     );
     expect(auditLogService.record).toHaveBeenCalledWith(
       expect.objectContaining({
