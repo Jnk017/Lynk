@@ -8,6 +8,22 @@ import { User } from '../user/entities/user.entity';
 import { SubscriptionPlan } from './entities/subscription-plan.entity';
 import { SubscriptionService } from './subscription.service';
 
+interface QueryRunnerMock {
+  connect: jest.Mock;
+  startTransaction: jest.Mock;
+  commitTransaction: jest.Mock;
+  rollbackTransaction: jest.Mock;
+  release: jest.Mock;
+  manager: {
+    update: jest.Mock;
+    findOne: jest.Mock;
+  };
+}
+
+interface DataSourceMock {
+  createQueryRunner: jest.Mock<QueryRunnerMock, []>;
+}
+
 function buildService(options: { userFound?: boolean } = {}) {
   const plan = Object.assign(new SubscriptionPlan(), {
     id: 'plan-gold',
@@ -30,7 +46,7 @@ function buildService(options: { userFound?: boolean } = {}) {
       .fn()
       .mockResolvedValue(options.userFound === false ? null : user),
   };
-  const queryRunner = {
+  const queryRunner: QueryRunnerMock = {
     connect: jest.fn(),
     startTransaction: jest.fn(),
     commitTransaction: jest.fn(),
@@ -38,14 +54,14 @@ function buildService(options: { userFound?: boolean } = {}) {
     release: jest.fn(),
     manager,
   };
-  const dataSource = {
+  const dataSource: DataSourceMock = {
     createQueryRunner: jest.fn(() => queryRunner),
   };
   const observabilityService = { track: jest.fn() };
   const service = new SubscriptionService(
     planRepository as unknown as Repository<SubscriptionPlan>,
-    userRepository as unknown as Repository<User>,
-    transactionRepository as unknown as Repository<Transaction>,
+    userRepository as Repository<User>,
+    transactionRepository as Repository<Transaction>,
     dataSource as never,
     paymentService as unknown as PaymentService,
     observabilityService as unknown as ObservabilityService,
@@ -91,17 +107,13 @@ describe('SubscriptionService paid activation safety', () => {
 
     await service.subscribeToPlan('user-1', SubscriptionTier.GOLD, 'tx-1');
 
-    expect(manager.update).toHaveBeenCalledWith(
-      Transaction,
-      'tx-1',
-      expect.objectContaining({
-        metadata: expect.objectContaining({
-          provider: 'test',
-          subscriptionTier: SubscriptionTier.GOLD,
-          subscriptionActivatedAt: expect.any(String),
-        }),
-      }),
-    );
+    expect(manager.update).toHaveBeenCalledWith(Transaction, 'tx-1', {
+      metadata: {
+        provider: 'test',
+        subscriptionTier: SubscriptionTier.GOLD,
+        subscriptionActivatedAt: expect.any(String) as unknown as string,
+      },
+    });
     expect(queryRunner.commitTransaction).toHaveBeenCalled();
   });
 
