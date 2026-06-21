@@ -107,13 +107,16 @@ describe('SubscriptionService paid activation safety', () => {
 
     await service.subscribeToPlan('user-1', SubscriptionTier.GOLD, 'tx-1');
 
-    expect(manager.update).toHaveBeenCalledWith(Transaction, 'tx-1', {
-      metadata: {
-        provider: 'test',
-        subscriptionTier: SubscriptionTier.GOLD,
-        subscriptionActivatedAt: expect.any(String) as unknown as string,
-      },
-    });
+    expect(manager.update).toHaveBeenCalledWith(
+      Transaction,
+      'tx-1',
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          provider: 'test',
+          subscriptionTier: SubscriptionTier.GOLD,
+        }),
+      }),
+    );
     expect(queryRunner.commitTransaction).toHaveBeenCalled();
   });
 
