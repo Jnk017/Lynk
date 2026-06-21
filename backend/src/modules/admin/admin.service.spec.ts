@@ -9,7 +9,11 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { SystemSettingsService } from '../system-settings/system-settings.service';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { Report } from '../moderation/entities/report.entity';
-import { ReportStatus, RevenuePoolStatus } from '../../common/enums';
+import {
+  ReportStatus,
+  RevenuePoolStatus,
+  VerificationStatus,
+} from '../../common/enums';
 import { ObservabilityService } from '../observability/observability.service';
 
 interface RepositoryMock<T extends object> {
@@ -45,6 +49,7 @@ describe('AdminService', () => {
   let featureFlagService: jest.Mocked<
     Pick<FeatureFlagService, 'list' | 'upsert'>
   >;
+  let observabilityService: jest.Mocked<Pick<ObservabilityService, 'track'>>;
   let service: AdminService;
 
   beforeEach(() => {
@@ -73,6 +78,9 @@ describe('AdminService', () => {
       list: jest.fn().mockResolvedValue([]),
       upsert: jest.fn().mockResolvedValue({ id: 'flag-1', enabled: true }),
     };
+    observabilityService = {
+      track: jest.fn().mockResolvedValue(undefined),
+    };
 
     service = new AdminService(
       userRepository as unknown as Repository<User>,
@@ -84,9 +92,7 @@ describe('AdminService', () => {
       auditLogService as unknown as AuditLogService,
       systemSettingsService as unknown as SystemSettingsService,
       featureFlagService as unknown as FeatureFlagService,
-      {
-        track: jest.fn().mockResolvedValue(undefined),
-      } as unknown as ObservabilityService,
+      observabilityService as unknown as ObservabilityService,
     );
   });
 
@@ -107,6 +113,29 @@ describe('AdminService', () => {
     expect(auditLogService.record).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'admin.user.suspend',
+        actorUserId: 'admin-1',
+        targetType: 'User',
+        targetId: 'user-1',
+      }),
+    );
+  });
+
+  it('restores users and records an audit log', async () => {
+    userRepository.findOne.mockResolvedValueOnce({
+      id: 'user-1',
+      isBanned: true,
+    } as User);
+
+    await service.restoreUser({ id: 'admin-1' }, 'user-1');
+
+    expect(userRepository.update).toHaveBeenCalledWith('user-1', {
+      isBanned: false,
+      bannedAt: null,
+      banReason: null,
+    });
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.user.restore',
         actorUserId: 'admin-1',
         targetType: 'User',
         targetId: 'user-1',
@@ -137,6 +166,39 @@ describe('AdminService', () => {
     expect(auditLogService.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'admin.report.resolve' }),
     );
+  });
+
+  it('audits verification review decisions', async () => {
+    userRepository.findOne.mockResolvedValueOnce({ id: 'user-1' } as User);
+    userRepository.save.mockImplementationOnce((input: Partial<User>) =>
+      Promise.resolve(input as User),
+    );
+
+    await service.reviewVerification(
+      { id: 'admin-1' },
+      'user-1',
+      VerificationStatus.REJECTED,
+      'document mismatch',
+    );
+
+    expect(userRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        verificationStatus: VerificationStatus.REJECTED,
+      }),
+    );
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.verification.review',
+        actorUserId: 'admin-1',
+        targetType: 'User',
+        targetId: 'user-1',
+        metadata: {
+          status: VerificationStatus.REJECTED,
+          note: 'document mismatch',
+        },
+      }),
+    );
+    expect(observabilityService.track).toHaveBeenCalled();
   });
 
   it('audits dry-run revenue sharing previews', async () => {
@@ -172,6 +234,27 @@ describe('AdminService', () => {
       expect.objectContaining({
         action: 'admin.system_settings.upsert',
         actorUserId: 'super-1',
+      }),
+    );
+  });
+
+  it('audits feature flag changes', async () => {
+    await service.upsertFeatureFlag({ id: 'super-1' }, 'pi_payments', {
+      enabled: true,
+      rules: { rollout: 100 },
+    });
+
+    expect(featureFlagService.upsert).toHaveBeenCalledWith('pi_payments', {
+      enabled: true,
+      rules: { rollout: 100 },
+    });
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.feature_flags.upsert',
+        actorUserId: 'super-1',
+        targetType: 'FeatureFlag',
+        targetId: 'flag-1',
+        metadata: { key: 'pi_payments', enabled: true },
       }),
     );
   });
