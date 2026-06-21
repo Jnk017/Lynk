@@ -116,12 +116,13 @@ describe('SubscriptionService paid activation safety', () => {
     await service.subscribeToPlan('user-1', SubscriptionTier.GOLD, 'tx-1');
 
     expect(manager.update).toHaveBeenCalled();
-    const updateCall = manager.update.mock.calls[0] as [
-      typeof Transaction,
-      string,
-      TransactionMetadataPatch,
-    ];
-    expect(updateCall[0]).toBe(Transaction);
+    const updateCall = manager.update.mock.calls.find(
+      (call: unknown[]) => call[0] === Transaction,
+    ) as [typeof Transaction, string, TransactionMetadataPatch] | undefined;
+    expect(updateCall).toBeDefined();
+    if (!updateCall) {
+      throw new Error('Expected transaction metadata update call');
+    }
     expect(updateCall[1]).toBe('tx-1');
     expect(updateCall[2].metadata.provider).toBe('test');
     expect(updateCall[2].metadata.subscriptionTier).toBe(SubscriptionTier.GOLD);
