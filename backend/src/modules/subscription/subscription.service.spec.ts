@@ -24,6 +24,14 @@ interface DataSourceMock {
   createQueryRunner: jest.Mock<QueryRunnerMock, []>;
 }
 
+interface TransactionMetadataPatch {
+  metadata: {
+    provider?: string;
+    subscriptionTier?: SubscriptionTier;
+    subscriptionActivatedAt?: string;
+  };
+}
+
 function buildService(options: { userFound?: boolean } = {}) {
   const plan = Object.assign(new SubscriptionPlan(), {
     id: 'plan-gold',
@@ -107,15 +115,20 @@ describe('SubscriptionService paid activation safety', () => {
 
     await service.subscribeToPlan('user-1', SubscriptionTier.GOLD, 'tx-1');
 
-    expect(manager.update).toHaveBeenCalledWith(
-      Transaction,
-      'tx-1',
-      expect.objectContaining({
-        metadata: expect.objectContaining({
-          provider: 'test',
-          subscriptionTier: SubscriptionTier.GOLD,
-        }),
-      }),
+    expect(manager.update).toHaveBeenCalled();
+    const updateCall = manager.update.mock.calls[0] as [
+      typeof Transaction,
+      string,
+      TransactionMetadataPatch,
+    ];
+    expect(updateCall[0]).toBe(Transaction);
+    expect(updateCall[1]).toBe('tx-1');
+    expect(updateCall[2].metadata.provider).toBe('test');
+    expect(updateCall[2].metadata.subscriptionTier).toBe(
+      SubscriptionTier.GOLD,
+    );
+    expect(typeof updateCall[2].metadata.subscriptionActivatedAt).toBe(
+      'string',
     );
     expect(queryRunner.commitTransaction).toHaveBeenCalled();
   });
