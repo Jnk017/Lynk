@@ -15,7 +15,9 @@ function buildService(referralLog: ReferralLog | null) {
     update: jest.fn(),
   };
   const referralLogRepository = {
-    findOne: jest.fn<Promise<ReferralLog | null>, [unknown]>().mockResolvedValue(referralLog),
+    findOne: jest
+      .fn<Promise<ReferralLog | null>, [unknown]>()
+      .mockResolvedValue(referralLog),
     save: jest.fn<Promise<ReferralLog>, [ReferralLog]>(),
   };
 
@@ -57,7 +59,8 @@ describe('ReferralService referral reward idempotency', () => {
   });
 
   it('does not reward when no referral log exists for the verified user', async () => {
-    const { referralLogRepository, service, userRepository } = buildService(null);
+    const { referralLogRepository, service, userRepository } =
+      buildService(null);
 
     await service.onUserVerified('user-without-referral');
 
