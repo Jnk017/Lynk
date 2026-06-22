@@ -21,6 +21,14 @@ export default function WalletScreen() {
       >
         <Text style={styles.buttonText}>Cash in</Text>
       </Pressable>
+
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/wallet/history')}
+        style={styles.secondaryButton}
+      >
+        <Text style={styles.secondaryButtonText}>Transaction history</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -62,5 +70,17 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontSize: 16,
     fontWeight: '800',
+  },
+  secondaryButton: {
+    alignItems: 'center',
+    borderColor: COLORS.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: SPACING.md,
+  },
+  secondaryButtonText: {
+    color: COLORS.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
