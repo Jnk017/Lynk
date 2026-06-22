@@ -13,3 +13,7 @@ A confirmed boost payment must activate the boost entitlement and increase visib
 ## Gift delivery
 
 A confirmed gift payment must create the gift delivery record, notify the recipient, and prevent duplicate delivery for the same transaction reference.
+
+## Wallet balance record
+
+A confirmed wallet cash-in must create a durable balance record, update visible balance from durable records, and preserve transaction linkage.
