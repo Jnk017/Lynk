@@ -69,6 +69,13 @@ export default function ProfileScreen() {
             <ProfileSectionCard title="Occupation" value={details('occupation')} emptyText="Share the work or purpose that energizes you." icon="□" onPress={edit} />
           </View>
 
+          <View style={styles.sectionHeader}><Text style={styles.sectionEyebrow}>PAYMENTS</Text><Text style={styles.sectionHeading}>Premium, wallet & boosts</Text></View>
+          <View style={styles.sectionGrid}>
+            <ProfileSectionCard title="Premium" value={profile.subscriptionPlan ? profile.subscriptionPlan.name : undefined} emptyText="Upgrade through the channel-calibrated checkout." icon="✦" onPress={() => router.push('/checkout?type=subscription&amount=10')} />
+            <ProfileSectionCard title="Wallet Cash-In" value="PawaPay/Binance Pay on Global, Pi SDK on Pi" emptyText="Fund your Lynk wallet with the right channel." icon="◎" onPress={() => router.push('/checkout?type=subscription&amount=10&source=wallet')} />
+            <ProfileSectionCard title="Boosts & Super Likes" value="Increase visibility safely" emptyText="Buy a boost through the approved provider for your frontend." icon="⭐" onPress={() => router.push('/checkout?type=boost&amount=5')} />
+          </View>
+
           <View style={styles.sectionHeader}><Text style={styles.sectionEyebrow}>ACCOUNT</Text><Text style={styles.sectionHeading}>Community & preferences</Text></View>
           <View style={styles.sectionGrid}>
             <ProfileSectionCard title="Commitment Center" value={profile.marriageCommitment ? 'Your shared marriage journey' : undefined} emptyText="Explore a clear path toward shared commitment." icon="♡" onPress={() => router.push('/profile/marriage')} />
