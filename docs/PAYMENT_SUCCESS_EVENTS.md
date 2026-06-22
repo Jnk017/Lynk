@@ -9,3 +9,7 @@ A confirmed subscription payment must activate the member subscription, refresh 
 ## Boost activation
 
 A confirmed boost payment must activate the boost entitlement and increase visibility only once for the confirmed transaction.
+
+## Gift delivery
+
+A confirmed gift payment must create the gift delivery record, notify the recipient, and prevent duplicate delivery for the same transaction reference.
