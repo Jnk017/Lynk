@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { API_ENDPOINTS } from '../../src/constants/api';
@@ -6,12 +6,22 @@ import { api } from '../../src/services/api';
 import { PaymentTransactionSummary } from '../../src/services/paymentStatus';
 
 export default function WalletHistoryScreen() {
-  const { data = [], isLoading, isError, refetch } = useQuery<
+  const queryClient = useQueryClient();
+  const { data = [], isLoading, isError, refetch, isFetching } = useQuery<
     PaymentTransactionSummary[]
   >({
     queryKey: ['payment-transactions'],
     queryFn: () => api.get<PaymentTransactionSummary[]>(API_ENDPOINTS.payment.transactions),
+    refetchInterval: 15000,
   });
+
+  const refreshWalletState = async () => {
+    await Promise.all([
+      refetch(),
+      queryClient.invalidateQueries({ queryKey: ['wallet'] }),
+      queryClient.invalidateQueries({ queryKey: ['profile'] }),
+    ]);
+  };
 
   return (
     <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
@@ -19,9 +29,12 @@ export default function WalletHistoryScreen() {
       <Pressable accessibilityRole="button" onPress={() => router.push('/wallet')}>
         <Text>Cash in</Text>
       </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => void refreshWalletState()}>
+        <Text>{isFetching ? 'Refreshing…' : 'Refresh wallet state'}</Text>
+      </Pressable>
       {isLoading ? <Text>Loading transactions…</Text> : null}
       {isError ? (
-        <Pressable accessibilityRole="button" onPress={() => void refetch()}>
+        <Pressable accessibilityRole="button" onPress={() => void refreshWalletState()}>
           <Text>Retry</Text>
         </Pressable>
       ) : null}

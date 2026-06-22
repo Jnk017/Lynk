@@ -1,17 +1,26 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { reconcilePaymentSuccess } from '../../src/services/paymentReconciliation';
 import { getPaymentStatusByReference } from '../../src/services/paymentStatus';
 
 export default function PaymentSuccessScreen() {
   const params = useLocalSearchParams();
   const reference = String(params.ref ?? '');
   const provider = String(params.provider ?? 'n/a');
+  const queryClient = useQueryClient();
   const { data, refetch, isFetching } = useQuery({
     queryKey: ['payment-status', reference],
     queryFn: () => getPaymentStatusByReference(reference),
     enabled: Boolean(reference),
   });
+
+  useEffect(() => {
+    if (data?.status === 'completed') {
+      void reconcilePaymentSuccess(queryClient, data.transaction);
+    }
+  }, [data?.status, data?.transaction, queryClient]);
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
