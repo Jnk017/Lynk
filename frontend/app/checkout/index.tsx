@@ -61,6 +61,14 @@ function parseAmount(value: unknown): number {
   return Number.isFinite(amount) && amount > 0 ? amount : 10;
 }
 
+function statusPath(
+  status: 'success' | 'pending' | 'failed',
+  params: Record<string, string>,
+) {
+  const query = new URLSearchParams(params).toString();
+  return `/payment/${status}${query ? `?${query}` : ''}`;
+}
+
 export default function CheckoutScreen() {
   const params = useLocalSearchParams();
   const checkoutType = parseCheckoutType(params.type);
@@ -82,7 +90,14 @@ export default function CheckoutScreen() {
           memo: copy.memo,
           metadata: { type: checkoutType, source: 'checkout' },
         });
-        Alert.alert('Pi payment initialized', result.identifier);
+        router.replace(
+          statusPath('pending', {
+            provider: 'pi_network',
+            type: checkoutType,
+            amount: String(amount),
+            ref: result.identifier,
+          }),
+        );
         return;
       }
 
@@ -96,13 +111,34 @@ export default function CheckoutScreen() {
 
       if (result.checkoutUrl) {
         await Linking.openURL(result.checkoutUrl);
+        router.replace(
+          statusPath('pending', {
+            provider: selectedProvider,
+            type: checkoutType,
+            amount: String(amount),
+            ref: result.externalRef,
+          }),
+        );
       } else {
-        Alert.alert('Payment initialized', result.externalRef);
+        router.replace(
+          statusPath('success', {
+            provider: selectedProvider,
+            type: checkoutType,
+            amount: String(amount),
+            ref: result.externalRef,
+          }),
+        );
       }
     } catch (error) {
-      Alert.alert(
-        'Payment unavailable',
-        error instanceof Error ? error.message : 'Please try again.',
+      const message = error instanceof Error ? error.message : 'Please try again.';
+      Alert.alert('Payment unavailable', message);
+      router.replace(
+        statusPath('failed', {
+          provider: selectedProvider,
+          type: checkoutType,
+          amount: String(amount),
+          reason: message,
+        }),
       );
     } finally {
       setLoading(false);
