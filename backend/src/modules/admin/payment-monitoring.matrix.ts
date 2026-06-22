@@ -22,18 +22,21 @@ export const ADMIN_PAYMENT_MONITORING_SIGNALS = [
     id: 'wallet-balance-mismatch',
     category: 'wallet',
     severity: 'critical',
-    description: 'Visible wallet balance diverges from reconciled transaction state.',
+    description:
+      'Visible wallet balance diverges from reconciled transaction state.',
   },
   {
     id: 'duplicate-payment-reference',
     category: 'risk',
     severity: 'critical',
-    description: 'Multiple completed payments share the same external reference.',
+    description:
+      'Multiple completed payments share the same external reference.',
   },
   {
     id: 'velocity-limit-breach',
     category: 'risk',
     severity: 'warning',
-    description: 'A user or device attempts too many payment operations in a short period.',
+    description:
+      'A user or device attempts too many payment operations in a short period.',
   },
 ] satisfies AdminPaymentMonitoringSignal[];
