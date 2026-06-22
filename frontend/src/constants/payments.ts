@@ -1,5 +1,7 @@
 import { APP_CHANNEL, LynkAppChannel } from './channel';
 
+export { APP_CHANNEL };
+
 export type PaymentProvider = 'pawapay' | 'binance_pay' | 'pi_network';
 
 export interface PaymentMethod {
