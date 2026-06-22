@@ -17,7 +17,7 @@ const supportedTypes = [
   TransactionType.REFUND,
 ];
 
-export const PROVIDER_ADAPTER_CAPABILITIES: ProviderAdapterCapabilities[] = [
+export const PROVIDER_ADAPTER_CAPABILITIES = [
   {
     provider: TransactionProvider.PAWAPAY,
     environment: 'sandbox',
@@ -45,24 +45,18 @@ export const PROVIDER_ADAPTER_CAPABILITIES: ProviderAdapterCapabilities[] = [
     supportedCurrencies: [TransactionCurrency.PI],
     supportedTypes,
   },
-];
+] satisfies ProviderAdapterCapabilities[];
 
-export const PROVIDER_CREDENTIAL_REQUIREMENTS: ProviderCredentialRequirements[] = [
+export const PROVIDER_CREDENTIAL_REQUIREMENTS = [
   {
     provider: TransactionProvider.PAWAPAY,
-    requiredInProduction: [
-      'PAWAPAY_API_KEY',
-      'PAWAPAY_WEBHOOK_SECRET',
-    ],
+    requiredInProduction: ['PAWAPAY_API_KEY', 'PAWAPAY_WEBHOOK_SECRET'],
     optionalInSandbox: ['PAWAPAY_BASE_URL'],
     callbackRequirements: ['Deposit status webhook URL'],
   },
   {
     provider: TransactionProvider.BINANCE_PAY,
-    requiredInProduction: [
-      'BINANCE_PAY_API_KEY',
-      'BINANCE_PAY_SECRET_KEY',
-    ],
+    requiredInProduction: ['BINANCE_PAY_API_KEY', 'BINANCE_PAY_SECRET_KEY'],
     optionalInSandbox: ['BINANCE_PAY_BASE_URL'],
     callbackRequirements: ['Order notification webhook URL'],
   },
@@ -70,13 +64,11 @@ export const PROVIDER_CREDENTIAL_REQUIREMENTS: ProviderCredentialRequirements[] 
     provider: TransactionProvider.PI_NETWORK,
     requiredInProduction: ['PI_API_KEY'],
     optionalInSandbox: ['PI_SANDBOX_APP_ID'],
-    callbackRequirements: [
-      'Pi payment approval and completion callbacks',
-    ],
+    callbackRequirements: ['Pi payment approval and completion callbacks'],
   },
-];
+] satisfies ProviderCredentialRequirements[];
 
-export const PROVIDER_SANDBOX_CONTRACTS: ProviderSandboxContract[] = [
+export const PROVIDER_SANDBOX_CONTRACTS = [
   {
     provider: TransactionProvider.PAWAPAY,
     sandboxExternalRefPrefix: 'test_pawapay_',
@@ -104,4 +96,4 @@ export const PROVIDER_SANDBOX_CONTRACTS: ProviderSandboxContract[] = [
     webhookEventIdField: 'paymentId',
     paymentReferenceField: 'identifier',
   },
-];
+] satisfies ProviderSandboxContract[];
