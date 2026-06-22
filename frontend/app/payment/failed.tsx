@@ -1,8 +1,21 @@
 import { useLocalSearchParams, router } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { trackPaymentTelemetry } from '../../src/services/paymentTelemetry';
 
 export default function PaymentFailedScreen() {
   const params = useLocalSearchParams();
+  const provider = String(params.provider ?? 'n/a');
+  const reference = String(params.ref ?? 'n/a');
+
+  useEffect(() => {
+    void trackPaymentTelemetry('payment_failed_viewed', {
+      provider,
+      reference,
+      status: 'failed',
+    });
+  }, [provider, reference]);
+
   return (
     <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
       <Text style={{ fontSize: 48, textAlign: 'center' }}>!</Text>
@@ -10,10 +23,10 @@ export default function PaymentFailedScreen() {
         Payment failed
       </Text>
       <Text style={{ marginTop: 12, textAlign: 'center' }}>
-        Provider: {String(params.provider ?? 'n/a')}
+        Provider: {provider}
       </Text>
       <Text style={{ marginTop: 4, textAlign: 'center' }}>
-        Reference: {String(params.ref ?? 'n/a')}
+        Reference: {reference}
       </Text>
       <Pressable
         accessibilityRole="button"

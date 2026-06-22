@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { reconcilePaymentSuccess } from '../../src/services/paymentReconciliation';
 import { getPaymentStatusByReference } from '../../src/services/paymentStatus';
+import { trackPaymentTelemetry } from '../../src/services/paymentTelemetry';
 
 export default function PaymentSuccessScreen() {
   const params = useLocalSearchParams();
@@ -15,6 +16,14 @@ export default function PaymentSuccessScreen() {
     queryFn: () => getPaymentStatusByReference(reference),
     enabled: Boolean(reference),
   });
+
+  useEffect(() => {
+    void trackPaymentTelemetry('payment_success_viewed', {
+      provider,
+      reference,
+      status: data?.status ?? 'checking',
+    });
+  }, [data?.status, provider, reference]);
 
   useEffect(() => {
     if (data?.status === 'completed') {

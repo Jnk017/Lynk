@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { getPaymentStatusByReference } from '../../src/services/paymentStatus';
+import { trackPaymentTelemetry } from '../../src/services/paymentTelemetry';
 
 export default function PaymentPendingScreen() {
   const params = useLocalSearchParams();
@@ -15,6 +16,14 @@ export default function PaymentPendingScreen() {
     enabled: Boolean(reference),
     refetchInterval: 5000,
   });
+
+  useEffect(() => {
+    void trackPaymentTelemetry('payment_pending_viewed', {
+      provider,
+      reference,
+      status: data?.status ?? 'checking',
+    });
+  }, [data?.status, provider, reference]);
 
   useEffect(() => {
     if (data?.status === 'completed') {
