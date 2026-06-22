@@ -35,4 +35,32 @@ export const PAYMENT_E2E_SCENARIOS: PaymentE2eScenario[] = [
     flow: 'premium activation',
     expectedOutcome: 'Pi subscription confirmation refreshes premium state',
   },
+  {
+    id: 'global-pawapay-gift-delivery',
+    channel: 'global',
+    provider: 'pawapay',
+    flow: 'gifts',
+    expectedOutcome: 'gift business event is recorded once after confirmation',
+  },
+  {
+    id: 'global-binance-founder-purchase',
+    channel: 'global',
+    provider: 'binance_pay',
+    flow: 'founder purchase',
+    expectedOutcome: 'founder state and revenue eligibility refresh after confirmation',
+  },
+  {
+    id: 'pi-sdk-staking',
+    channel: 'pi',
+    provider: 'pi_sdk',
+    flow: 'staking',
+    expectedOutcome: 'staking commitment is reconciled from backend status',
+  },
+  {
+    id: 'pi-sdk-marriage-commitment',
+    channel: 'pi',
+    provider: 'pi_sdk',
+    flow: 'marriage commitment',
+    expectedOutcome: 'relationship commitment state refreshes after confirmation',
+  },
 ];
