@@ -1,9 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { API_ENDPOINTS } from '../../src/constants/api';
 import { api } from '../../src/services/api';
 import { PaymentTransactionSummary } from '../../src/services/paymentStatus';
+import { trackPaymentTelemetry } from '../../src/services/paymentTelemetry';
 
 export default function WalletHistoryScreen() {
   const queryClient = useQueryClient();
@@ -14,6 +16,13 @@ export default function WalletHistoryScreen() {
     queryFn: () => api.get<PaymentTransactionSummary[]>(API_ENDPOINTS.payment.transactions),
     refetchInterval: 15000,
   });
+
+  useEffect(() => {
+    void trackPaymentTelemetry('wallet_history_viewed', {
+      status: isError ? 'error' : isLoading ? 'loading' : 'ready',
+      amount: data.length,
+    });
+  }, [data.length, isError, isLoading]);
 
   const refreshWalletState = async () => {
     await Promise.all([
