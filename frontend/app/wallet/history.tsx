@@ -1,22 +1,40 @@
+import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { API_ENDPOINTS } from '../../src/constants/api';
+import { api } from '../../src/services/api';
+import { PaymentTransactionSummary } from '../../src/services/paymentStatus';
 
 export default function WalletHistoryScreen() {
+  const { data = [], isLoading, isError, refetch } = useQuery<
+    PaymentTransactionSummary[]
+  >({
+    queryKey: ['payment-transactions'],
+    queryFn: () => api.get<PaymentTransactionSummary[]>(API_ENDPOINTS.payment.transactions),
+  });
+
   return (
-    <View style={{ flex: 1, justifyContent: 'center', padding: 24 }}>
-      <Text style={{ fontSize: 28, fontWeight: '800', textAlign: 'center' }}>
-        Wallet history
-      </Text>
-      <Text style={{ marginTop: 12, textAlign: 'center' }}>
-        Transaction history route is ready for backend-backed rendering.
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push('/wallet')}
-        style={{ alignItems: 'center', marginTop: 24, padding: 16 }}
-      >
+    <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
+      <Text style={{ fontSize: 28, fontWeight: '800' }}>Wallet history</Text>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/wallet')}>
         <Text>Cash in</Text>
       </Pressable>
-    </View>
+      {isLoading ? <Text>Loading transactions…</Text> : null}
+      {isError ? (
+        <Pressable accessibilityRole="button" onPress={() => void refetch()}>
+          <Text>Retry</Text>
+        </Pressable>
+      ) : null}
+      {!isLoading && !isError && data.length === 0 ? (
+        <Text>No transactions yet.</Text>
+      ) : null}
+      {data.map((tx) => (
+        <View key={tx.id} style={{ borderWidth: 1, borderRadius: 12, padding: 12 }}>
+          <Text style={{ fontWeight: '700' }}>{tx.type ?? 'Payment'}</Text>
+          <Text>{tx.provider ?? 'provider'} · {tx.status ?? 'status'}</Text>
+          <Text>{tx.amount ?? 0} {tx.currency ?? ''}</Text>
+        </View>
+      ))}
+    </ScrollView>
   );
 }
