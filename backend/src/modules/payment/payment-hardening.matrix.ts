@@ -40,7 +40,8 @@ export const PAYMENT_HARDENING_CONTROLS = [
     id: 'scheduled-reconciliation',
     category: 'reconciliation',
     severity: 'required',
-    description: 'Reconcile pending and inconsistent transactions on a schedule.',
+    description:
+      'Reconcile pending and inconsistent transactions on a schedule.',
   },
   {
     id: 'complete-audit-trail',
