@@ -16,13 +16,15 @@ export const PAYMENT_HARDENING_CONTROLS = [
     id: 'provider-circuit-breaker',
     category: 'circuit-breaker',
     severity: 'required',
-    description: 'Disable provider initiation after repeated provider failures.',
+    description:
+      'Disable provider initiation after repeated provider failures.',
   },
   {
     id: 'payment-replay-protection',
     category: 'replay-protection',
     severity: 'required',
-    description: 'Reject duplicate webhook or callback processing by event key.',
+    description:
+      'Reject duplicate webhook or callback processing by event key.',
   },
   {
     id: 'provider-outage-fallback',
